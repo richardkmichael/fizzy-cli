@@ -24,6 +24,9 @@ type CleanupTracker struct {
 
 	// Reactions to delete (by ID, with card number and comment ID)
 	Reactions []ReactionRef
+
+	// TimeEntries to delete (by ID, with card number)
+	TimeEntries []TimeEntryRef
 }
 
 // ColumnRef references a column for cleanup.
@@ -51,15 +54,22 @@ type ReactionRef struct {
 	CommentID  string
 }
 
+// TimeEntryRef references a time entry for cleanup.
+type TimeEntryRef struct {
+	ID         string
+	CardNumber int
+}
+
 // NewCleanupTracker creates a new cleanup tracker.
 func NewCleanupTracker() *CleanupTracker {
 	return &CleanupTracker{
-		Boards:    make([]string, 0),
-		Cards:     make([]int, 0),
-		Columns:   make([]ColumnRef, 0),
-		Comments:  make([]CommentRef, 0),
-		Steps:     make([]StepRef, 0),
-		Reactions: make([]ReactionRef, 0),
+		Boards:      make([]string, 0),
+		Cards:       make([]int, 0),
+		Columns:     make([]ColumnRef, 0),
+		Comments:    make([]CommentRef, 0),
+		Steps:       make([]StepRef, 0),
+		Reactions:   make([]ReactionRef, 0),
+		TimeEntries: make([]TimeEntryRef, 0),
 	}
 }
 
@@ -96,6 +106,11 @@ func (c *CleanupTracker) AddReaction(id string, cardNumber int, commentID string
 // AddCardReaction adds a card reaction to the cleanup list.
 func (c *CleanupTracker) AddCardReaction(id string, cardNumber int) {
 	c.Reactions = append(c.Reactions, ReactionRef{ID: id, CardNumber: cardNumber, CommentID: ""})
+}
+
+// AddTimeEntry adds a time entry to the cleanup list.
+func (c *CleanupTracker) AddTimeEntry(id string, cardNumber int) {
+	c.TimeEntries = append(c.TimeEntries, TimeEntryRef{ID: id, CardNumber: cardNumber})
 }
 
 // CleanupAll deletes all tracked resources in reverse dependency order.
@@ -143,7 +158,17 @@ func (c *CleanupTracker) CleanupAll(h *Harness) []error {
 		}
 	}
 
-	// 4. Cards (depend on boards)
+	// 4. Time entries (depend on cards)
+	for i := len(c.TimeEntries) - 1; i >= 0; i-- {
+		ref := c.TimeEntries[i]
+		result := h.Run("time", "delete", ref.ID,
+			"--card", strconv.Itoa(ref.CardNumber))
+		if result.ExitCode != 0 && result.ExitCode != ExitNotFound {
+			errors = append(errors, fmt.Errorf("failed to delete time entry %s: exit %d", ref.ID, result.ExitCode))
+		}
+	}
+
+	// 5. Cards (depend on boards)
 	for i := len(c.Cards) - 1; i >= 0; i-- {
 		number := c.Cards[i]
 		result := h.Run("card", "delete", strconv.Itoa(number))
@@ -152,7 +177,7 @@ func (c *CleanupTracker) CleanupAll(h *Harness) []error {
 		}
 	}
 
-	// 5. Columns (depend on boards)
+	// 6. Columns (depend on boards)
 	for i := len(c.Columns) - 1; i >= 0; i-- {
 		ref := c.Columns[i]
 		result := h.Run("column", "delete", ref.ID,
@@ -162,7 +187,7 @@ func (c *CleanupTracker) CleanupAll(h *Harness) []error {
 		}
 	}
 
-	// 6. Boards (no dependencies)
+	// 7. Boards (no dependencies)
 	for i := len(c.Boards) - 1; i >= 0; i-- {
 		id := c.Boards[i]
 		result := h.Run("board", "delete", id)
