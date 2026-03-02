@@ -160,6 +160,55 @@ var notificationReadAllCmd = &cobra.Command{
 	},
 }
 
+// Notification tray flags
+var notificationTrayIncludeRead bool
+
+var notificationTrayCmd = &cobra.Command{
+	Use:   "tray",
+	Short: "Show notification tray",
+	Long:  "Shows your notification tray (up to 100 unread notifications). Use --include-read to also include read notifications.",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := requireAuthAndAccount(); err != nil {
+			exitWithError(err)
+		}
+
+		client := getClient()
+		path := "/notifications/tray.json"
+		if notificationTrayIncludeRead {
+			path += "?include_read=true"
+		}
+
+		resp, err := client.Get(path)
+		if err != nil {
+			exitWithError(err)
+		}
+
+		// Build summary
+		count := 0
+		unreadCount := 0
+		if arr, ok := resp.Data.([]interface{}); ok {
+			count = len(arr)
+			for _, item := range arr {
+				if notif, ok := item.(map[string]interface{}); ok {
+					if read, ok := notif["read"].(bool); ok && !read {
+						unreadCount++
+					}
+				}
+			}
+		}
+		summary := fmt.Sprintf("%d notifications (%d unread)", count, unreadCount)
+
+		// Build breadcrumbs
+		breadcrumbs := []response.Breadcrumb{
+			breadcrumb("read", "fizzy notification read <id>", "Mark as read"),
+			breadcrumb("read-all", "fizzy notification read-all", "Mark all as read"),
+			breadcrumb("list", "fizzy notification list", "List all notifications"),
+		}
+
+		printSuccessWithBreadcrumbs(resp.Data, summary, breadcrumbs)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(notificationCmd)
 
@@ -167,6 +216,10 @@ func init() {
 	notificationListCmd.Flags().IntVar(&notificationListPage, "page", 0, "Page number")
 	notificationListCmd.Flags().BoolVar(&notificationListAll, "all", false, "Fetch all pages")
 	notificationCmd.AddCommand(notificationListCmd)
+
+	// Tray
+	notificationTrayCmd.Flags().BoolVar(&notificationTrayIncludeRead, "include-read", false, "Include read notifications")
+	notificationCmd.AddCommand(notificationTrayCmd)
 
 	// Read/Unread
 	notificationCmd.AddCommand(notificationReadCmd)

@@ -453,6 +453,8 @@ fizzy search "bug" --sort newest        # Sort by created_at desc
 
 ```bash
 fizzy notification list
+fizzy notification tray                    # Unread notifications (up to 100)
+fizzy notification tray --include-read     # Include read notifications
 fizzy notification read NOTIFICATION_ID
 fizzy notification unread NOTIFICATION_ID
 fizzy notification read-all

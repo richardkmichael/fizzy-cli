@@ -108,6 +108,52 @@ func TestNotificationReadUnread(t *testing.T) {
 	})
 }
 
+func TestNotificationTray(t *testing.T) {
+	h := harness.New(t)
+
+	t.Run("returns notification tray", func(t *testing.T) {
+		result := h.Run("notification", "tray")
+
+		if result.ExitCode != harness.ExitSuccess {
+			t.Errorf("expected exit code %d, got %d\nstderr: %s", harness.ExitSuccess, result.ExitCode, result.Stderr)
+		}
+
+		if result.Response == nil {
+			t.Fatalf("expected JSON response, got nil\nstdout: %s", result.Stdout)
+		}
+
+		if !result.Response.Success {
+			t.Error("expected success=true")
+		}
+
+		arr := result.GetDataArray()
+		if arr == nil {
+			t.Error("expected data to be an array")
+		}
+	})
+
+	t.Run("supports --include-read flag", func(t *testing.T) {
+		result := h.Run("notification", "tray", "--include-read")
+
+		if result.ExitCode != harness.ExitSuccess {
+			t.Errorf("expected exit code %d, got %d\nstderr: %s", harness.ExitSuccess, result.ExitCode, result.Stderr)
+		}
+
+		if result.Response == nil {
+			t.Fatalf("expected JSON response, got nil\nstdout: %s", result.Stdout)
+		}
+
+		if !result.Response.Success {
+			t.Error("expected success=true")
+		}
+
+		arr := result.GetDataArray()
+		if arr == nil {
+			t.Error("expected data to be an array")
+		}
+	})
+}
+
 func TestNotificationReadAll(t *testing.T) {
 	h := harness.New(t)
 

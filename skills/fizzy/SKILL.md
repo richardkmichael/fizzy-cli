@@ -644,6 +644,8 @@ fizzy pin list                                 # List your pinned cards (up to 1
 
 ```bash
 fizzy notification list [--page N] [--all]
+fizzy notification tray                    # Unread notifications (up to 100)
+fizzy notification tray --include-read     # Include read notifications
 fizzy notification read NOTIFICATION_ID
 fizzy notification read-all
 fizzy notification unread NOTIFICATION_ID

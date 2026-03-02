@@ -83,6 +83,62 @@ func TestNotificationUnread(t *testing.T) {
 	})
 }
 
+func TestNotificationTray(t *testing.T) {
+	t.Run("returns notification tray", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.GetResponse = &client.APIResponse{
+			StatusCode: 200,
+			Data: []interface{}{
+				map[string]interface{}{"id": "1", "read": false},
+				map[string]interface{}{"id": "2", "read": false},
+			},
+		}
+
+		result := SetTestMode(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer ResetTestMode()
+
+		RunTestCommand(func() {
+			notificationTrayCmd.Run(notificationTrayCmd, []string{})
+		})
+
+		if result.ExitCode != 0 {
+			t.Errorf("expected exit code 0, got %d", result.ExitCode)
+		}
+		if mock.GetCalls[0].Path != "/notifications/tray.json" {
+			t.Errorf("expected path '/notifications/tray.json', got '%s'", mock.GetCalls[0].Path)
+		}
+	})
+
+	t.Run("includes read notifications with flag", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.GetResponse = &client.APIResponse{
+			StatusCode: 200,
+			Data: []interface{}{
+				map[string]interface{}{"id": "1", "read": false},
+				map[string]interface{}{"id": "2", "read": true},
+			},
+		}
+
+		result := SetTestMode(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer ResetTestMode()
+
+		notificationTrayIncludeRead = true
+		RunTestCommand(func() {
+			notificationTrayCmd.Run(notificationTrayCmd, []string{})
+		})
+		notificationTrayIncludeRead = false
+
+		if result.ExitCode != 0 {
+			t.Errorf("expected exit code 0, got %d", result.ExitCode)
+		}
+		if mock.GetCalls[0].Path != "/notifications/tray.json?include_read=true" {
+			t.Errorf("expected path '/notifications/tray.json?include_read=true', got '%s'", mock.GetCalls[0].Path)
+		}
+	})
+}
+
 func TestNotificationReadAll(t *testing.T) {
 	t.Run("marks all notifications as read", func(t *testing.T) {
 		mock := NewMockClient()
