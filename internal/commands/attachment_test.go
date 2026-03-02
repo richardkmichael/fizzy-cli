@@ -74,6 +74,51 @@ func TestParseAttachments(t *testing.T) {
 			expected: []Attachment{},
 		},
 		{
+			name: "figure block outside attachment tags (p-wrapped)",
+			html: `<div class="action-text-content">
+  <p><action-text-attachment sgid="eyJfcmFpbHMiOnt9fQ==" content-type="image/png" filename="test.png" filesize="321" width="100" height="100" previewable="true">  </action-text-attachment></p><figure class="attachment attachment--preview attachment--png">
+    <figcaption class="attachment__caption">
+      <a class="attachment__link" href="/6102600/rails/active_storage/blobs/redirect/abc/test.png?disposition=attachment">Download</a>
+    </figcaption>
+  </figure>
+</div>`,
+			expected: []Attachment{
+				{
+					Index:       1,
+					Filename:    "test.png",
+					ContentType: "image/png",
+					Filesize:    321,
+					Width:       100,
+					Height:      100,
+					SGID:        "eyJfcmFpbHMiOnt9fQ==",
+					DownloadURL: "/6102600/rails/active_storage/blobs/redirect/abc/test.png?disposition=attachment",
+				},
+			},
+		},
+		{
+			name: "figure block outside attachment tags with newline",
+			html: `<div class="action-text-content">
+  <p><action-text-attachment sgid="eyJfcmFpbHMiOnt9fQ==" content-type="image/png" filename="test.png" filesize="321" width="100" height="100" previewable="true">  </action-text-attachment></p>
+  <figure class="attachment attachment--preview attachment--png">
+    <figcaption class="attachment__caption">
+      <a class="attachment__link" href="/6102600/rails/active_storage/blobs/redirect/abc/test.png?disposition=attachment">Download</a>
+    </figcaption>
+  </figure>
+</div>`,
+			expected: []Attachment{
+				{
+					Index:       1,
+					Filename:    "test.png",
+					ContentType: "image/png",
+					Filesize:    321,
+					Width:       100,
+					Height:      100,
+					SGID:        "eyJfcmFpbHMiOnt9fQ==",
+					DownloadURL: "/6102600/rails/active_storage/blobs/redirect/abc/test.png?disposition=attachment",
+				},
+			},
+		},
+		{
 			name: "filters out mentions (no filename or download URL)",
 			html: `<div>
   <action-text-attachment sgid="mention-sgid" content-type="application/vnd.actiontext.mention" url="https://example.com/users/1">

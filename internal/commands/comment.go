@@ -130,9 +130,9 @@ var commentCreateCmd = &cobra.Command{
 			if err != nil {
 				exitWithError(err)
 			}
-			body = string(content)
+			body = markdownToHTML(string(content))
 		} else if commentCreateBody != "" {
-			body = commentCreateBody
+			body = markdownToHTML(commentCreateBody)
 		} else {
 			exitWithError(newRequiredFlagError("body or body_file"))
 		}
@@ -211,9 +211,9 @@ var commentUpdateCmd = &cobra.Command{
 			if err != nil {
 				exitWithError(err)
 			}
-			commentParams["body"] = string(content)
+			commentParams["body"] = markdownToHTML(string(content))
 		} else if commentUpdateBody != "" {
-			commentParams["body"] = commentUpdateBody
+			commentParams["body"] = markdownToHTML(commentUpdateBody)
 		}
 
 		reqBody := map[string]interface{}{

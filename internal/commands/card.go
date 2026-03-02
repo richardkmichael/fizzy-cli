@@ -281,9 +281,9 @@ var cardCreateCmd = &cobra.Command{
 			if err != nil {
 				exitWithError(err)
 			}
-			cardParams["description"] = string(content)
+			cardParams["description"] = markdownToHTML(string(content))
 		} else if cardCreateDescription != "" {
-			cardParams["description"] = cardCreateDescription
+			cardParams["description"] = markdownToHTML(cardCreateDescription)
 		}
 
 		if cardCreateTagIDs != "" {
@@ -375,9 +375,9 @@ var cardUpdateCmd = &cobra.Command{
 			if err != nil {
 				exitWithError(err)
 			}
-			cardParams["description"] = string(content)
+			cardParams["description"] = markdownToHTML(string(content))
 		} else if cardUpdateDescription != "" {
-			cardParams["description"] = cardUpdateDescription
+			cardParams["description"] = markdownToHTML(cardUpdateDescription)
 		}
 		if cardUpdateImage != "" {
 			cardParams["image"] = cardUpdateImage

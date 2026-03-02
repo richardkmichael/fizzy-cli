@@ -174,9 +174,10 @@ Use 'fizzy card attachments show CARD_NUMBER' to see available attachments and t
 func parseAttachments(html string) []Attachment {
 	var attachments []Attachment
 
-	// Match action-text-attachment elements with their content
-	// <action-text-attachment sgid="..." content-type="..." filename="..." filesize="..." ...>...</action-text-attachment>
-	attachmentRegex := regexp.MustCompile(`(?s)<action-text-attachment\s+([^>]+)>(.*?)</action-text-attachment>`)
+	// Match action-text-attachment elements with their inner content and any trailing
+	// <figure> block. The figure may appear inside or outside the attachment tags depending
+	// on how the server renders the HTML (e.g. when wrapped in <p> tags).
+	attachmentRegex := regexp.MustCompile(`(?s)<action-text-attachment\s+([^>]+)>(.*?)</action-text-attachment>(?:\s*</p>)?\s*(<figure[^>]*>.*?</figure>)?`)
 	matches := attachmentRegex.FindAllStringSubmatch(html, -1)
 
 	for i, match := range matches {
@@ -186,6 +187,9 @@ func parseAttachments(html string) []Attachment {
 
 		attrs := match[1]
 		content := match[2]
+		if len(match) > 3 && match[3] != "" {
+			content += match[3]
+		}
 		attachment := Attachment{
 			Index: i + 1,
 		}
