@@ -629,6 +629,8 @@ fizzy tag list [--page N] [--all]
 ```bash
 fizzy user list [--page N] [--all]
 fizzy user show USER_ID
+fizzy user update USER_ID --name "Name"       # Update user name (requires admin/owner)
+fizzy user update USER_ID --avatar /path.jpg  # Update user avatar
 ```
 
 ### Pins

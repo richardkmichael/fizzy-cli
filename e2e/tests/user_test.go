@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/robzolkos/fizzy-cli/e2e/harness"
@@ -123,5 +125,139 @@ func TestUserShowNotFound(t *testing.T) {
 	})
 }
 
-// Note: We don't test user update/deactivate as they would modify real users
-// These should be tested manually or with a dedicated test account
+func TestUserUpdate(t *testing.T) {
+	cfg := harness.LoadConfig()
+	if cfg.UserID == "" {
+		t.Skip("FIZZY_TEST_USER_ID not set, skipping user update tests")
+	}
+
+	h := harness.New(t)
+	userID := cfg.UserID
+
+	// First get the current name so we can restore it
+	showResult := h.Run("user", "show", userID)
+	if showResult.ExitCode != harness.ExitSuccess {
+		t.Fatalf("failed to show test user: %s", showResult.Stderr)
+	}
+	originalName := showResult.GetDataString("name")
+	if originalName == "" {
+		t.Fatal("expected test user to have a name")
+	}
+
+	t.Run("update user name", func(t *testing.T) {
+		newName := originalName + " Updated"
+		result := h.Run("user", "update", userID, "--name", newName)
+
+		if result.ExitCode != harness.ExitSuccess {
+			t.Errorf("expected exit code %d, got %d\nstderr: %s", harness.ExitSuccess, result.ExitCode, result.Stderr)
+		}
+
+		if !result.Response.Success {
+			t.Errorf("expected success=true, error: %+v", result.Response.Error)
+		}
+
+		// Verify the name was updated
+		verifyResult := h.Run("user", "show", userID)
+		if verifyResult.ExitCode == harness.ExitSuccess {
+			name := verifyResult.GetDataString("name")
+			if name != newName {
+				t.Errorf("expected name %q, got %q", newName, name)
+			}
+		}
+	})
+
+	t.Run("restore original name", func(t *testing.T) {
+		result := h.Run("user", "update", userID, "--name", originalName)
+
+		if result.ExitCode != harness.ExitSuccess {
+			t.Errorf("expected exit code %d, got %d\nstderr: %s", harness.ExitSuccess, result.ExitCode, result.Stderr)
+		}
+
+		if !result.Response.Success {
+			t.Errorf("expected success=true, error: %+v", result.Response.Error)
+		}
+
+		// Verify restored
+		verifyResult := h.Run("user", "show", userID)
+		if verifyResult.ExitCode == harness.ExitSuccess {
+			name := verifyResult.GetDataString("name")
+			if name != originalName {
+				t.Errorf("expected name %q, got %q", originalName, name)
+			}
+		}
+	})
+
+	t.Run("update user avatar", func(t *testing.T) {
+		wd, _ := os.Getwd()
+		fixturePath := filepath.Join(wd, "..", "testdata", "fixtures", "test_image.png")
+		if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
+			t.Skipf("test fixture not found at %s", fixturePath)
+		}
+
+		result := h.Run("user", "update", userID, "--avatar", fixturePath)
+
+		if result.ExitCode != harness.ExitSuccess {
+			t.Errorf("expected exit code %d, got %d\nstderr: %s\nstdout: %s", harness.ExitSuccess, result.ExitCode, result.Stderr, result.Stdout)
+		}
+
+		if !result.Response.Success {
+			t.Errorf("expected success=true, error: %+v", result.Response.Error)
+		}
+
+		// Verify user still has an avatar URL
+		verifyResult := h.Run("user", "show", userID)
+		if verifyResult.ExitCode == harness.ExitSuccess {
+			avatarURL := verifyResult.GetDataString("avatar_url")
+			if avatarURL == "" {
+				t.Error("expected user to have an avatar_url after upload")
+			}
+		}
+	})
+
+	t.Run("update name and avatar together", func(t *testing.T) {
+		wd, _ := os.Getwd()
+		fixturePath := filepath.Join(wd, "..", "testdata", "fixtures", "test_image.png")
+		if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
+			t.Skipf("test fixture not found at %s", fixturePath)
+		}
+
+		newName := originalName + " WithAvatar"
+		result := h.Run("user", "update", userID, "--name", newName, "--avatar", fixturePath)
+
+		if result.ExitCode != harness.ExitSuccess {
+			t.Errorf("expected exit code %d, got %d\nstderr: %s\nstdout: %s", harness.ExitSuccess, result.ExitCode, result.Stderr, result.Stdout)
+		}
+
+		if !result.Response.Success {
+			t.Errorf("expected success=true, error: %+v", result.Response.Error)
+		}
+
+		// Verify name was updated
+		verifyResult := h.Run("user", "show", userID)
+		if verifyResult.ExitCode == harness.ExitSuccess {
+			name := verifyResult.GetDataString("name")
+			if name != newName {
+				t.Errorf("expected name %q, got %q", newName, name)
+			}
+		}
+
+		// Restore original name
+		h.Run("user", "update", userID, "--name", originalName)
+	})
+
+	t.Run("update non-existent user returns not found", func(t *testing.T) {
+		result := h.Run("user", "update", "non-existent-user-id-12345", "--name", "Nope")
+
+		if result.ExitCode != harness.ExitNotFound {
+			t.Errorf("expected exit code %d, got %d\nstdout: %s", harness.ExitNotFound, result.ExitCode, result.Stdout)
+		}
+
+		if result.Response == nil {
+			t.Fatal("expected JSON response")
+		}
+
+		if result.Response.Success {
+			t.Error("expected success=false")
+		}
+	})
+}

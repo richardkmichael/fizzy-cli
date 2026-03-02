@@ -413,6 +413,9 @@ fizzy reaction delete REACTION_ID --card 42 --comment COMMENT_ID
 ```bash
 fizzy user list
 fizzy user show USER_ID
+fizzy user update USER_ID --name "New Name"
+fizzy user update USER_ID --avatar /path/to/avatar.jpg
+fizzy user update USER_ID --name "New Name" --avatar /path/to/avatar.jpg
 ```
 
 ### Tags
@@ -692,6 +695,9 @@ make test-unit
 # Set required environment variables
 export FIZZY_TEST_TOKEN=your-api-token
 export FIZZY_TEST_ACCOUNT=your-account-slug
+
+# Optional: set a test user ID for user update/deactivate tests
+export FIZZY_TEST_USER_ID=your-test-user-id
 
 # Build and run e2e tests
 make test-e2e

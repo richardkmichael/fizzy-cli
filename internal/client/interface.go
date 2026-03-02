@@ -6,6 +6,7 @@ type API interface {
 	Get(path string) (*APIResponse, error)
 	Post(path string, body interface{}) (*APIResponse, error)
 	Patch(path string, body interface{}) (*APIResponse, error)
+	PatchMultipart(path, fileField, filePath string, fields map[string]string) (*APIResponse, error)
 	Put(path string, body interface{}) (*APIResponse, error)
 	Delete(path string) (*APIResponse, error)
 	GetWithPagination(path string, fetchAll bool) (*APIResponse, error)

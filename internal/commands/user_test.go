@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/robzolkos/fizzy-cli/internal/client"
+	"github.com/robzolkos/fizzy-cli/internal/errors"
 )
 
 func TestUserList(t *testing.T) {
@@ -58,6 +59,118 @@ func TestUserShow(t *testing.T) {
 		}
 		if mock.GetCalls[0].Path != "/users/user-1.json" {
 			t.Errorf("expected path '/users/user-1.json', got '%s'", mock.GetCalls[0].Path)
+		}
+	})
+}
+
+func TestUserUpdate(t *testing.T) {
+	t.Run("updates user name", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.PatchResponse = &client.APIResponse{
+			StatusCode: 204,
+			Data:       map[string]interface{}{},
+		}
+
+		result := SetTestMode(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer ResetTestMode()
+
+		userUpdateName = "New Name"
+		RunTestCommand(func() {
+			userUpdateCmd.Run(userUpdateCmd, []string{"user-1"})
+		})
+		userUpdateName = ""
+
+		if result.ExitCode != 0 {
+			t.Errorf("expected exit code 0, got %d", result.ExitCode)
+		}
+		if len(mock.PatchCalls) != 1 {
+			t.Fatalf("expected 1 patch call, got %d", len(mock.PatchCalls))
+		}
+		if mock.PatchCalls[0].Path != "/users/user-1.json" {
+			t.Errorf("expected path '/users/user-1.json', got '%s'", mock.PatchCalls[0].Path)
+		}
+
+		body := mock.PatchCalls[0].Body.(map[string]interface{})
+		userParams := body["user"].(map[string]interface{})
+		if userParams["name"] != "New Name" {
+			t.Errorf("expected name 'New Name', got '%v'", userParams["name"])
+		}
+	})
+
+	t.Run("updates user avatar via multipart", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.PatchMultipartResponse = &client.APIResponse{
+			StatusCode: 204,
+			Data:       map[string]interface{}{},
+		}
+
+		result := SetTestMode(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer ResetTestMode()
+
+		userUpdateAvatar = "/path/to/avatar.jpg"
+		RunTestCommand(func() {
+			userUpdateCmd.Run(userUpdateCmd, []string{"user-1"})
+		})
+		userUpdateAvatar = ""
+
+		if result.ExitCode != 0 {
+			t.Errorf("expected exit code 0, got %d", result.ExitCode)
+		}
+		if len(mock.PatchMultipartCalls) != 1 {
+			t.Fatalf("expected 1 PatchMultipart call, got %d", len(mock.PatchMultipartCalls))
+		}
+		if mock.PatchMultipartCalls[0].Path != "/users/user-1.json" {
+			t.Errorf("expected path '/users/user-1.json', got '%s'", mock.PatchMultipartCalls[0].Path)
+		}
+	})
+
+	t.Run("updates name and avatar together via multipart", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.PatchMultipartResponse = &client.APIResponse{
+			StatusCode: 204,
+			Data:       map[string]interface{}{},
+		}
+
+		result := SetTestMode(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer ResetTestMode()
+
+		userUpdateName = "New Name"
+		userUpdateAvatar = "/path/to/avatar.jpg"
+		RunTestCommand(func() {
+			userUpdateCmd.Run(userUpdateCmd, []string{"user-1"})
+		})
+		userUpdateName = ""
+		userUpdateAvatar = ""
+
+		if result.ExitCode != 0 {
+			t.Errorf("expected exit code 0, got %d", result.ExitCode)
+		}
+		if len(mock.PatchMultipartCalls) != 1 {
+			t.Fatalf("expected 1 PatchMultipart call, got %d", len(mock.PatchMultipartCalls))
+		}
+		// When avatar is provided, should use PatchMultipart (not Patch)
+		if len(mock.PatchCalls) != 0 {
+			t.Errorf("expected 0 Patch calls when avatar is provided, got %d", len(mock.PatchCalls))
+		}
+	})
+
+	t.Run("requires at least one flag", func(t *testing.T) {
+		mock := NewMockClient()
+		result := SetTestMode(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer ResetTestMode()
+
+		userUpdateName = ""
+		userUpdateAvatar = ""
+		RunTestCommand(func() {
+			userUpdateCmd.Run(userUpdateCmd, []string{"user-1"})
+		})
+
+		if result.ExitCode != errors.ExitInvalidArgs {
+			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
 		}
 	})
 }

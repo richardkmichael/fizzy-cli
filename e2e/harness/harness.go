@@ -80,6 +80,7 @@ type Config struct {
 	Token      string
 	Account    string
 	APIURL     string
+	UserID     string
 }
 
 // Exit codes used by the CLI.
@@ -107,6 +108,7 @@ func LoadConfig() *Config {
 		Token:      os.Getenv("FIZZY_TEST_TOKEN"),
 		Account:    os.Getenv("FIZZY_TEST_ACCOUNT"),
 		APIURL:     getEnvOrDefault("FIZZY_TEST_API_URL", "https://app.fizzy.do"),
+		UserID:     os.Getenv("FIZZY_TEST_USER_ID"),
 	}
 }
 

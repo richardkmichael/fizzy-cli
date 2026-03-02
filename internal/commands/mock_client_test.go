@@ -17,10 +17,13 @@ type MockClient struct {
 	FollowLocationResponse    *client.APIResponse
 	UploadFileResponse        *client.APIResponse
 
+	PatchMultipartResponse *client.APIResponse
+
 	// Errors to return for each method
 	GetError               error
 	PostError              error
 	PatchError             error
+	PatchMultipartError    error
 	PutError               error
 	DeleteError            error
 	GetWithPaginationError error
@@ -32,6 +35,7 @@ type MockClient struct {
 	GetCalls               []MockCall
 	PostCalls              []MockCall
 	PatchCalls             []MockCall
+	PatchMultipartCalls    []MockCall
 	PutCalls               []MockCall
 	DeleteCalls            []MockCall
 	GetWithPaginationCalls []MockCall
@@ -66,6 +70,10 @@ func NewMockClient() *MockClient {
 		},
 		PatchResponse: &client.APIResponse{
 			StatusCode: 200,
+			Data:       map[string]interface{}{},
+		},
+		PatchMultipartResponse: &client.APIResponse{
+			StatusCode: 204,
 			Data:       map[string]interface{}{},
 		},
 		PutResponse: &client.APIResponse{
@@ -113,6 +121,18 @@ func (m *MockClient) Patch(path string, body interface{}) (*client.APIResponse, 
 		return nil, m.PatchError
 	}
 	return m.PatchResponse, nil
+}
+
+func (m *MockClient) PatchMultipart(path, fileField, filePath string, fields map[string]string) (*client.APIResponse, error) {
+	m.PatchMultipartCalls = append(m.PatchMultipartCalls, MockCall{Path: path, Body: map[string]interface{}{
+		"file_field": fileField,
+		"file_path":  filePath,
+		"fields":     fields,
+	}})
+	if m.PatchMultipartError != nil {
+		return nil, m.PatchMultipartError
+	}
+	return m.PatchMultipartResponse, nil
 }
 
 func (m *MockClient) Put(path string, body interface{}) (*client.APIResponse, error) {

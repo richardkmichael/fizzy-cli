@@ -85,6 +85,75 @@ func (c *Client) Patch(path string, body interface{}) (*APIResponse, error) {
 	return c.request("PATCH", path, body)
 }
 
+// PatchMultipart performs a PATCH request with multipart form data.
+func (c *Client) PatchMultipart(path, fileField, filePath string, fields map[string]string) (*APIResponse, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, errors.NewError(fmt.Sprintf("Failed to open file: %v", err))
+	}
+	defer file.Close()
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	part, err := writer.CreateFormFile(fileField, filepath.Base(filePath))
+	if err != nil {
+		return nil, errors.NewError(fmt.Sprintf("Failed to create form file: %v", err))
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		return nil, errors.NewError(fmt.Sprintf("Failed to copy file: %v", err))
+	}
+
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			return nil, errors.NewError(fmt.Sprintf("Failed to write form field: %v", err))
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, errors.NewError(fmt.Sprintf("Failed to finalize multipart body: %v", err))
+	}
+
+	reqURL := c.buildURL(path)
+	req, err := http.NewRequest("PATCH", reqURL, &buf)
+	if err != nil {
+		return nil, errors.NewNetworkError(fmt.Sprintf("Failed to create request: %v", err))
+	}
+
+	c.setHeaders(req)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, errors.NewNetworkError(fmt.Sprintf("Request failed: %v", err))
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.NewNetworkError(fmt.Sprintf("Failed to read response: %v", err))
+	}
+
+	apiResp := &APIResponse{
+		StatusCode: resp.StatusCode,
+		Body:       respBody,
+		Location:   resp.Header.Get("Location"),
+	}
+
+	if len(respBody) > 0 {
+		if err := json.Unmarshal(respBody, &apiResp.Data); err != nil {
+			return apiResp, nil
+		}
+	}
+
+	if resp.StatusCode >= 400 {
+		return apiResp, c.errorFromResponse(resp.StatusCode, respBody)
+	}
+
+	return apiResp, nil
+}
+
 // Put performs a PUT request with JSON body.
 func (c *Client) Put(path string, body interface{}) (*APIResponse, error) {
 	return c.request("PUT", path, body)

@@ -97,6 +97,76 @@ var userShowCmd = &cobra.Command{
 	},
 }
 
+// User update flags
+var userUpdateName string
+var userUpdateAvatar string
+
+var userUpdateCmd = &cobra.Command{
+	Use:   "update USER_ID",
+	Short: "Update a user",
+	Long:  "Updates a user's details. Requires admin or owner permissions.",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := requireAuthAndAccount(); err != nil {
+			exitWithError(err)
+		}
+
+		userID := args[0]
+		path := "/users/" + userID + ".json"
+
+		if userUpdateName == "" && userUpdateAvatar == "" {
+			exitWithError(newRequiredFlagError("name or --avatar"))
+		}
+
+		apiClient := getClient()
+
+		if userUpdateAvatar != "" {
+			fields := make(map[string]string)
+			if userUpdateName != "" {
+				fields["user[name]"] = userUpdateName
+			}
+			resp, err := apiClient.PatchMultipart(path, "user[avatar]", userUpdateAvatar, fields)
+			if err != nil {
+				exitWithError(err)
+			}
+
+			breadcrumbs := []response.Breadcrumb{
+				breadcrumb("show", fmt.Sprintf("fizzy user show %s", userID), "View user"),
+				breadcrumb("people", "fizzy user list", "List users"),
+			}
+
+			data := resp.Data
+			if data == nil {
+				data = map[string]interface{}{}
+			}
+			printSuccessWithBreadcrumbs(data, "", breadcrumbs)
+			return
+		}
+
+		body := map[string]interface{}{
+			"user": map[string]interface{}{
+				"name": userUpdateName,
+			},
+		}
+		resp, err := apiClient.Patch(path, body)
+		if err != nil {
+			exitWithError(err)
+		}
+
+		// Build breadcrumbs
+		breadcrumbs := []response.Breadcrumb{
+			breadcrumb("show", fmt.Sprintf("fizzy user show %s", userID), "View user"),
+			breadcrumb("people", "fizzy user list", "List users"),
+		}
+
+		data := resp.Data
+		if data == nil {
+			data = map[string]interface{}{}
+		}
+		printSuccessWithBreadcrumbs(data, "", breadcrumbs)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(userCmd)
 
@@ -107,4 +177,9 @@ func init() {
 
 	// Show
 	userCmd.AddCommand(userShowCmd)
+
+	// Update
+	userUpdateCmd.Flags().StringVar(&userUpdateName, "name", "", "User's display name")
+	userUpdateCmd.Flags().StringVar(&userUpdateAvatar, "avatar", "", "Path to avatar image file")
+	userCmd.AddCommand(userUpdateCmd)
 }

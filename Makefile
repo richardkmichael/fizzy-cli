@@ -25,6 +25,7 @@ help:
 	@echo "  FIZZY_TEST_TOKEN   API token"
 	@echo "  FIZZY_TEST_ACCOUNT Account slug"
 	@echo "  FIZZY_TEST_API_URL API base URL (default: https://app.fizzy.do)"
+	@echo "  FIZZY_TEST_USER_ID User ID for user update/deactivate tests (optional)"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make build"
