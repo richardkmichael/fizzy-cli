@@ -22,9 +22,9 @@ API documentation: https://github.com/basecamp/fizzy/blob/main/docs/API.md
 
 Key endpoints used by the CLI:
 - `/boards.json` - List boards
-- `/boards/{id}/cards.json` - Cards on a board
+- `/cards.json?board_ids[]=<id>` - Cards on a board
 - `/cards/{number}.json` - Show card by number
-- `/search.json` - Full-text search across cards
+- `/cards.json?terms[]=<query>` - Search cards by text
 
 **Important:** Cards use NUMBER for CLI commands, not internal ID. `fizzy card show 42` uses the card number.
 
