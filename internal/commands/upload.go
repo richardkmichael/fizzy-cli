@@ -3,7 +3,7 @@ package commands
 import (
 	"os"
 
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 

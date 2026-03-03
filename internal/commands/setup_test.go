@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/robzolkos/fizzy-cli/internal/config"
+	"github.com/basecamp/fizzy-cli/internal/config"
 	"gopkg.in/yaml.v3"
 )
 

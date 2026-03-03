@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 )
 
 // prettyPrint controls whether JSON output is indented.

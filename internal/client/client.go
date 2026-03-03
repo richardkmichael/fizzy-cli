@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 )
 
 // Client is an HTTP client for the Fizzy API.

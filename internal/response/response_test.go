@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 )
 
 func TestSuccess(t *testing.T) {

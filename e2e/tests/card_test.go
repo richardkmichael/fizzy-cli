@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/robzolkos/fizzy-cli/e2e/harness"
+	"github.com/basecamp/fizzy-cli/e2e/harness"
 )
 
 // createTestBoard creates a board for card tests and adds it to cleanup

@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/robzolkos/fizzy-cli/internal/client"
-	"github.com/robzolkos/fizzy-cli/internal/config"
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/client"
+	"github.com/basecamp/fizzy-cli/internal/config"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 

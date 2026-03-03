@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/robzolkos/fizzy-cli/internal/response"
+	"github.com/basecamp/fizzy-cli/internal/response"
 	"github.com/spf13/cobra"
 )
 

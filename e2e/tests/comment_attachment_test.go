@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/robzolkos/fizzy-cli/e2e/harness"
+	"github.com/basecamp/fizzy-cli/e2e/harness"
 )
 
 // createCommentWithAttachment uploads a file, creates a card, then adds a comment with the attachment.

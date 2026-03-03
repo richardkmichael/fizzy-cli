@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/robzolkos/fizzy-cli/internal/commands"
+	"github.com/basecamp/fizzy-cli/internal/commands"
 	"runtime/debug"
 )
 
