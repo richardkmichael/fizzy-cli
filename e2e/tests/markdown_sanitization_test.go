@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/robzolkos/fizzy-cli/e2e/harness"
+	"github.com/basecamp/fizzy-cli/e2e/harness"
 )
 
 func TestMarkdownSanitization(t *testing.T) {

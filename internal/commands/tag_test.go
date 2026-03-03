@@ -3,7 +3,7 @@ package commands
 import (
 	"testing"
 
-	"github.com/robzolkos/fizzy-cli/internal/client"
+	"github.com/basecamp/fizzy-cli/internal/client"
 )
 
 func TestTagList(t *testing.T) {

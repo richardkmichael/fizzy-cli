@@ -9,7 +9,7 @@
 ## Quick Start
 
 ```bash
-brew install robzolkos/fizzy-cli/fizzy-cli
+brew install basecamp/fizzy-cli/fizzy-cli
 fizzy setup
 ```
 
@@ -25,24 +25,24 @@ yay -S fizzy-cli
 
 **Debian/Ubuntu:**
 ```bash
-curl -LO https://github.com/robzolkos/fizzy-cli/releases/latest/download/fizzy-cli_VERSION_amd64.deb
+curl -LO https://github.com/basecamp/fizzy-cli/releases/latest/download/fizzy-cli_VERSION_amd64.deb
 sudo dpkg -i fizzy-cli_VERSION_amd64.deb
 ```
 
 **Fedora/RHEL:**
 ```bash
-curl -LO https://github.com/robzolkos/fizzy-cli/releases/latest/download/fizzy-cli-VERSION-1.x86_64.rpm
+curl -LO https://github.com/basecamp/fizzy-cli/releases/latest/download/fizzy-cli-VERSION-1.x86_64.rpm
 sudo rpm -i fizzy-cli-VERSION-1.x86_64.rpm
 ```
 
-**Windows:** download `fizzy-windows-amd64.exe` from [Releases](https://github.com/robzolkos/fizzy-cli/releases), rename to `fizzy.exe`, and add to your PATH.
+**Windows:** download `fizzy-windows-amd64.exe` from [Releases](https://github.com/basecamp/fizzy-cli/releases), rename to `fizzy.exe`, and add to your PATH.
 
 **Go install:**
 ```bash
-go install github.com/robzolkos/fizzy-cli/cmd/fizzy@latest
+go install github.com/basecamp/fizzy-cli/cmd/fizzy@latest
 ```
 
-**GitHub Release:** download from [Releases](https://github.com/robzolkos/fizzy-cli/releases).
+**GitHub Release:** download from [Releases](https://github.com/basecamp/fizzy-cli/releases).
 
 </details>
 

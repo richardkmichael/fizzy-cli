@@ -87,7 +87,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          curl -sL "https://github.com/robzolkos/fizzy-cli/releases/download/v${VERSION}/fizzy-linux-${{ matrix.goarch }}" -o fizzy
+          curl -sL "https://github.com/basecamp/fizzy-cli/releases/download/v${VERSION}/fizzy-linux-${{ matrix.goarch }}" -o fizzy
           chmod +x fizzy
 
       - name: Build .deb package
@@ -111,7 +111,7 @@ jobs:
           Maintainer: Rob Zolkos <rob@zolkos.com>
           Description: CLI for managing Fizzy boards, cards, and tasks
            A command-line interface for the Fizzy API.
-          Homepage: https://github.com/robzolkos/fizzy-cli
+          Homepage: https://github.com/basecamp/fizzy-cli
           EOF
 
           sed -i 's/^          //' "${PKG_ROOT}/DEBIAN/control"
@@ -135,7 +135,7 @@ jobs:
           Release:        1
           Summary:        CLI for managing Fizzy boards, cards, and tasks
           License:        MIT
-          URL:            https://github.com/robzolkos/fizzy-cli
+          URL:            https://github.com/basecamp/fizzy-cli
 
           %description
           A command-line interface for the Fizzy API.
@@ -169,7 +169,7 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
 
           # Download source tarball and calculate checksum
-          curl -sL "https://github.com/robzolkos/fizzy-cli/archive/v${VERSION}.tar.gz" -o source.tar.gz
+          curl -sL "https://github.com/basecamp/fizzy-cli/archive/v${VERSION}.tar.gz" -o source.tar.gz
           SHA256=$(sha256sum source.tar.gz | cut -d' ' -f1)
 
           # Generate PKGBUILD
@@ -180,11 +180,11 @@ jobs:
           pkgrel=1
           pkgdesc="CLI for managing Fizzy boards, cards, and tasks"
           arch=('x86_64' 'aarch64')
-          url="https://github.com/robzolkos/fizzy-cli"
+          url="https://github.com/basecamp/fizzy-cli"
           license=('MIT')
           depends=('glibc')
           makedepends=('go')
-          source=("$pkgname-$pkgver.tar.gz::https://github.com/robzolkos/fizzy-cli/archive/v$pkgver.tar.gz")
+          source=("$pkgname-$pkgver.tar.gz::https://github.com/basecamp/fizzy-cli/archive/v$pkgver.tar.gz")
           sha256sums=('SHA256_PLACEHOLDER')
           options=('!debug')
 
@@ -234,8 +234,8 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
 
           # Download SHA256 files
-          curl -sL "https://github.com/robzolkos/fizzy-cli/releases/download/v${VERSION}/SHA256SUMS-darwin-amd64.txt" -o sha256-amd64.txt
-          curl -sL "https://github.com/robzolkos/fizzy-cli/releases/download/v${VERSION}/SHA256SUMS-darwin-arm64.txt" -o sha256-arm64.txt
+          curl -sL "https://github.com/basecamp/fizzy-cli/releases/download/v${VERSION}/SHA256SUMS-darwin-amd64.txt" -o sha256-amd64.txt
+          curl -sL "https://github.com/basecamp/fizzy-cli/releases/download/v${VERSION}/SHA256SUMS-darwin-arm64.txt" -o sha256-arm64.txt
 
           SHA256_AMD64=$(cut -d' ' -f1 sha256-amd64.txt)
           SHA256_ARM64=$(cut -d' ' -f1 sha256-arm64.txt)
@@ -244,16 +244,16 @@ jobs:
           cat > fizzy-cli.rb << 'FORMULA'
           class FizzyCli < Formula
             desc "CLI for managing Fizzy boards, cards, and tasks"
-            homepage "https://github.com/robzolkos/fizzy-cli"
+            homepage "https://github.com/basecamp/fizzy-cli"
             version "VERSION_PLACEHOLDER"
             license "MIT"
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/robzolkos/fizzy-cli/releases/download/v#{version}/fizzy-darwin-arm64"
+                url "https://github.com/basecamp/fizzy-cli/releases/download/v#{version}/fizzy-darwin-arm64"
                 sha256 "SHA256_ARM64_PLACEHOLDER"
               else
-                url "https://github.com/robzolkos/fizzy-cli/releases/download/v#{version}/fizzy-darwin-amd64"
+                url "https://github.com/basecamp/fizzy-cli/releases/download/v#{version}/fizzy-darwin-amd64"
                 sha256 "SHA256_AMD64_PLACEHOLDER"
               end
             end

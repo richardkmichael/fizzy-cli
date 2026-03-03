@@ -3,7 +3,7 @@ package commands
 import (
 	"testing"
 
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 )
 
 func TestMigrateBoardValidation(t *testing.T) {

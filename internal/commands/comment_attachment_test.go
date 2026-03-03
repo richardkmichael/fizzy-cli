@@ -3,8 +3,8 @@ package commands
 import (
 	"testing"
 
-	"github.com/robzolkos/fizzy-cli/internal/client"
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/client"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 )
 
 func TestExtractCommentAttachments(t *testing.T) {

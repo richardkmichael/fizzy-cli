@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"github.com/robzolkos/fizzy-cli/internal/client"
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/client"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 )
 
 // MockClient is a mock implementation of client.API for testing.

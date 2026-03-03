@@ -21,7 +21,7 @@ else
     cat << 'EOF'
 <hook-output>
 Fizzy plugin: fizzy CLI not found.
-Install: https://github.com/robzolkos/fizzy-cli#quick-start
+Install: https://github.com/basecamp/fizzy-cli#quick-start
 </hook-output>
 EOF
     exit 0

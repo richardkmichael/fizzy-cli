@@ -964,4 +964,4 @@ cat ~/.config/fizzy/config.yaml          # Check api_url setting
 ## Learn More
 
 - API documentation: https://github.com/basecamp/fizzy/blob/main/docs/API.md
-- CLI repository: https://github.com/robzolkos/fizzy-cli
+- CLI repository: https://github.com/basecamp/fizzy-cli
