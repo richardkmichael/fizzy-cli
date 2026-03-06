@@ -76,7 +76,7 @@ func runSetup(cmd *cobra.Command, args []string) error {
 			configLocation = "local config (" + localPath + ")"
 		}
 
-		err := huh.NewConfirm().
+		err = huh.NewConfirm().
 			Title(fmt.Sprintf("Existing %s found. Reconfigure?", configLocation)).
 			Value(&reconfigure).
 			Run()
