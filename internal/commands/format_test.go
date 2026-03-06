@@ -519,15 +519,26 @@ func TestFormatFlagsNewRegistered(t *testing.T) {
 }
 
 func TestSetupBlockedInMachineMode(t *testing.T) {
-	defer ResetTestMode()
-	ResetTestMode()
-	cfgAgent = true
-	err := runSetup(setupCmd, nil)
-	if err == nil {
-		t.Fatal("expected error when running setup with --agent")
-	}
-	if !strings.Contains(err.Error(), "interactive terminal") {
-		t.Errorf("unexpected error: %v", err)
+	for _, tc := range []struct {
+		name string
+		set  func()
+	}{
+		{"agent", func() { cfgAgent = true }},
+		{"json", func() { cfgJSON = true }},
+		{"quiet", func() { cfgQuiet = true }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			defer ResetTestMode()
+			ResetTestMode()
+			tc.set()
+			err := runSetup(setupCmd, nil)
+			if err == nil {
+				t.Fatal("expected error when running setup in machine mode")
+			}
+			if !strings.Contains(err.Error(), "interactive terminal") {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
 	}
 }
 

@@ -18,47 +18,6 @@ func TestSetupCommandDescription(t *testing.T) {
 	})
 }
 
-func TestSetupRejectsMachineOutput(t *testing.T) {
-	t.Run("rejects agent mode", func(t *testing.T) {
-		defer ResetTestMode()
-		ResetTestMode()
-		cfgAgent = true
-		err := runSetup(setupCmd, nil)
-		if err == nil {
-			t.Fatal("expected error when running setup with --agent")
-		}
-		if !strings.Contains(err.Error(), "interactive terminal") {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("rejects JSON mode", func(t *testing.T) {
-		defer ResetTestMode()
-		ResetTestMode()
-		cfgJSON = true
-		err := runSetup(setupCmd, nil)
-		if err == nil {
-			t.Fatal("expected error when running setup with --json")
-		}
-		if !strings.Contains(err.Error(), "interactive terminal") {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("rejects quiet mode", func(t *testing.T) {
-		defer ResetTestMode()
-		ResetTestMode()
-		cfgQuiet = true
-		err := runSetup(setupCmd, nil)
-		if err == nil {
-			t.Fatal("expected error when running setup with --quiet")
-		}
-		if !strings.Contains(err.Error(), "interactive terminal") {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
-}
-
 func TestParseAccounts(t *testing.T) {
 	t.Run("parses accounts from identity response", func(t *testing.T) {
 		data := map[string]any{
