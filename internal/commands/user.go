@@ -61,7 +61,7 @@ var userListCmd = &cobra.Command{
 		hasNext := resp.LinkNext != ""
 		if hasNext {
 			nextPage := userListPage + 1
-			if nextPage == 0 {
+			if userListPage == 0 {
 				nextPage = 2
 			}
 			breadcrumbs = append(breadcrumbs, breadcrumb("next", fmt.Sprintf("fizzy user list --page %d", nextPage), "Next page"))

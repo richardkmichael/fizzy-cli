@@ -70,7 +70,7 @@ var notificationListCmd = &cobra.Command{
 		hasNext := resp.LinkNext != ""
 		if hasNext {
 			nextPage := notificationListPage + 1
-			if nextPage == 0 {
+			if notificationListPage == 0 {
 				nextPage = 2
 			}
 			breadcrumbs = append(breadcrumbs, breadcrumb("next", fmt.Sprintf("fizzy notification list --page %d", nextPage), "Next page"))

@@ -57,4 +57,11 @@ var (
 		{Header: "Type", Field: "content_type"},
 		{Header: "Size", Field: "filesize"},
 	}
+
+	webhookColumns = render.Columns{
+		{Header: "ID", Field: "id"},
+		{Header: "Name", Field: "name"},
+		{Header: "URL", Field: "payload_url"},
+		{Header: "Active", Field: "active"},
+	}
 )

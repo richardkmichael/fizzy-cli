@@ -61,7 +61,7 @@ var tagListCmd = &cobra.Command{
 		hasNext := resp.LinkNext != ""
 		if hasNext {
 			nextPage := tagListPage + 1
-			if nextPage == 0 {
+			if tagListPage == 0 {
 				nextPage = 2
 			}
 			breadcrumbs = append(breadcrumbs, breadcrumb("next", fmt.Sprintf("fizzy tag list --page %d", nextPage), "Next page"))

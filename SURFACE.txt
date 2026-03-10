@@ -113,6 +113,14 @@ CMD fizzy user list
 CMD fizzy user show
 CMD fizzy user update
 CMD fizzy version
+CMD fizzy webhook
+CMD fizzy webhook create
+CMD fizzy webhook delete
+CMD fizzy webhook help
+CMD fizzy webhook list
+CMD fizzy webhook reactivate
+CMD fizzy webhook show
+CMD fizzy webhook update
 FLAG fizzy --agent type=bool
 FLAG fizzy --api-url type=string
 FLAG fizzy --count type=bool
@@ -1717,6 +1725,123 @@ FLAG fizzy version --quiet type=bool
 FLAG fizzy version --styled type=bool
 FLAG fizzy version --token type=string
 FLAG fizzy version --verbose type=bool
+FLAG fizzy webhook --agent type=bool
+FLAG fizzy webhook --api-url type=string
+FLAG fizzy webhook --count type=bool
+FLAG fizzy webhook --help type=bool
+FLAG fizzy webhook --ids-only type=bool
+FLAG fizzy webhook --json type=bool
+FLAG fizzy webhook --limit type=int
+FLAG fizzy webhook --markdown type=bool
+FLAG fizzy webhook --profile type=string
+FLAG fizzy webhook --quiet type=bool
+FLAG fizzy webhook --styled type=bool
+FLAG fizzy webhook --token type=string
+FLAG fizzy webhook --verbose type=bool
+FLAG fizzy webhook create --actions type=stringSlice
+FLAG fizzy webhook create --agent type=bool
+FLAG fizzy webhook create --api-url type=string
+FLAG fizzy webhook create --board type=string
+FLAG fizzy webhook create --count type=bool
+FLAG fizzy webhook create --help type=bool
+FLAG fizzy webhook create --ids-only type=bool
+FLAG fizzy webhook create --json type=bool
+FLAG fizzy webhook create --limit type=int
+FLAG fizzy webhook create --markdown type=bool
+FLAG fizzy webhook create --name type=string
+FLAG fizzy webhook create --profile type=string
+FLAG fizzy webhook create --quiet type=bool
+FLAG fizzy webhook create --styled type=bool
+FLAG fizzy webhook create --token type=string
+FLAG fizzy webhook create --url type=string
+FLAG fizzy webhook create --verbose type=bool
+FLAG fizzy webhook delete --agent type=bool
+FLAG fizzy webhook delete --api-url type=string
+FLAG fizzy webhook delete --board type=string
+FLAG fizzy webhook delete --count type=bool
+FLAG fizzy webhook delete --help type=bool
+FLAG fizzy webhook delete --ids-only type=bool
+FLAG fizzy webhook delete --json type=bool
+FLAG fizzy webhook delete --limit type=int
+FLAG fizzy webhook delete --markdown type=bool
+FLAG fizzy webhook delete --profile type=string
+FLAG fizzy webhook delete --quiet type=bool
+FLAG fizzy webhook delete --styled type=bool
+FLAG fizzy webhook delete --token type=string
+FLAG fizzy webhook delete --verbose type=bool
+FLAG fizzy webhook help --agent type=bool
+FLAG fizzy webhook help --api-url type=string
+FLAG fizzy webhook help --count type=bool
+FLAG fizzy webhook help --help type=bool
+FLAG fizzy webhook help --ids-only type=bool
+FLAG fizzy webhook help --json type=bool
+FLAG fizzy webhook help --limit type=int
+FLAG fizzy webhook help --markdown type=bool
+FLAG fizzy webhook help --profile type=string
+FLAG fizzy webhook help --quiet type=bool
+FLAG fizzy webhook help --styled type=bool
+FLAG fizzy webhook help --token type=string
+FLAG fizzy webhook help --verbose type=bool
+FLAG fizzy webhook list --agent type=bool
+FLAG fizzy webhook list --all type=bool
+FLAG fizzy webhook list --api-url type=string
+FLAG fizzy webhook list --board type=string
+FLAG fizzy webhook list --count type=bool
+FLAG fizzy webhook list --help type=bool
+FLAG fizzy webhook list --ids-only type=bool
+FLAG fizzy webhook list --json type=bool
+FLAG fizzy webhook list --limit type=int
+FLAG fizzy webhook list --markdown type=bool
+FLAG fizzy webhook list --page type=int
+FLAG fizzy webhook list --profile type=string
+FLAG fizzy webhook list --quiet type=bool
+FLAG fizzy webhook list --styled type=bool
+FLAG fizzy webhook list --token type=string
+FLAG fizzy webhook list --verbose type=bool
+FLAG fizzy webhook reactivate --agent type=bool
+FLAG fizzy webhook reactivate --api-url type=string
+FLAG fizzy webhook reactivate --board type=string
+FLAG fizzy webhook reactivate --count type=bool
+FLAG fizzy webhook reactivate --help type=bool
+FLAG fizzy webhook reactivate --ids-only type=bool
+FLAG fizzy webhook reactivate --json type=bool
+FLAG fizzy webhook reactivate --limit type=int
+FLAG fizzy webhook reactivate --markdown type=bool
+FLAG fizzy webhook reactivate --profile type=string
+FLAG fizzy webhook reactivate --quiet type=bool
+FLAG fizzy webhook reactivate --styled type=bool
+FLAG fizzy webhook reactivate --token type=string
+FLAG fizzy webhook reactivate --verbose type=bool
+FLAG fizzy webhook show --agent type=bool
+FLAG fizzy webhook show --api-url type=string
+FLAG fizzy webhook show --board type=string
+FLAG fizzy webhook show --count type=bool
+FLAG fizzy webhook show --help type=bool
+FLAG fizzy webhook show --ids-only type=bool
+FLAG fizzy webhook show --json type=bool
+FLAG fizzy webhook show --limit type=int
+FLAG fizzy webhook show --markdown type=bool
+FLAG fizzy webhook show --profile type=string
+FLAG fizzy webhook show --quiet type=bool
+FLAG fizzy webhook show --styled type=bool
+FLAG fizzy webhook show --token type=string
+FLAG fizzy webhook show --verbose type=bool
+FLAG fizzy webhook update --actions type=stringSlice
+FLAG fizzy webhook update --agent type=bool
+FLAG fizzy webhook update --api-url type=string
+FLAG fizzy webhook update --board type=string
+FLAG fizzy webhook update --count type=bool
+FLAG fizzy webhook update --help type=bool
+FLAG fizzy webhook update --ids-only type=bool
+FLAG fizzy webhook update --json type=bool
+FLAG fizzy webhook update --limit type=int
+FLAG fizzy webhook update --markdown type=bool
+FLAG fizzy webhook update --name type=string
+FLAG fizzy webhook update --profile type=string
+FLAG fizzy webhook update --quiet type=bool
+FLAG fizzy webhook update --styled type=bool
+FLAG fizzy webhook update --token type=string
+FLAG fizzy webhook update --verbose type=bool
 SUB fizzy auth
 SUB fizzy auth help
 SUB fizzy auth list
@@ -1831,3 +1956,11 @@ SUB fizzy user list
 SUB fizzy user show
 SUB fizzy user update
 SUB fizzy version
+SUB fizzy webhook
+SUB fizzy webhook create
+SUB fizzy webhook delete
+SUB fizzy webhook help
+SUB fizzy webhook list
+SUB fizzy webhook reactivate
+SUB fizzy webhook show
+SUB fizzy webhook update

@@ -59,6 +59,39 @@ func TestBoardList(t *testing.T) {
 		assertExitCode(t, err, 0)
 	})
 
+	t.Run("next page breadcrumb points to page 2 when page not specified", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.GetWithPaginationResponse = &client.APIResponse{
+			StatusCode: 200,
+			Data:       []any{map[string]any{"id": "1", "name": "Board 1"}},
+			LinkNext:   "https://api.example.com/boards.json?page=2",
+		}
+
+		result := SetTestMode(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer ResetTestMode()
+
+		boardListPage = 0
+		boardListAll = false
+		err := boardListCmd.RunE(boardListCmd, []string{})
+		boardListPage = 0
+
+		assertExitCode(t, err, 0)
+
+		found := false
+		for _, bc := range result.Response.Breadcrumbs {
+			if bc.Action == "next" {
+				found = true
+				if bc.Cmd != "fizzy board list --page 2" {
+					t.Errorf("expected next breadcrumb 'fizzy board list --page 2', got '%s'", bc.Cmd)
+				}
+			}
+		}
+		if !found {
+			t.Error("expected 'next' breadcrumb but none found")
+		}
+	})
+
 	t.Run("handles double-digit page numbers", func(t *testing.T) {
 		mock := NewMockClient()
 		mock.GetWithPaginationResponse = &client.APIResponse{

@@ -199,7 +199,7 @@ var cardListCmd = &cobra.Command{
 		hasNext := resp.LinkNext != ""
 		if hasNext {
 			nextPage := cardListPage + 1
-			if nextPage == 0 {
+			if cardListPage == 0 {
 				nextPage = 2
 			}
 			breadcrumbs = append(breadcrumbs, breadcrumb("next", fmt.Sprintf("fizzy card list --page %d", nextPage), "Next page"))

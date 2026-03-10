@@ -2,7 +2,7 @@
 name: fizzy
 description: |
   Interact with Fizzy via the Fizzy CLI. Manage boards, cards, columns, comments,
-  steps, reactions, tags, users, notifications, and pins. Use for ANY Fizzy question or action.
+  steps, reactions, tags, users, notifications, pins, and webhooks. Use for ANY Fizzy question or action.
 triggers:
   # Direct invocations
   - fizzy
@@ -16,6 +16,7 @@ triggers:
   - fizzy reaction
   - fizzy tag
   - fizzy notification
+  - fizzy webhook
   # Common actions
   - link to fizzy
   - track in fizzy
@@ -52,7 +53,7 @@ argument-hint: "[action] [args...]"
 
 # /fizzy - Fizzy Workflow Command
 
-Full CLI coverage: boards, cards, columns, comments, steps, reactions, tags, users, notifications, pins, search, and board migration.
+Full CLI coverage: boards, cards, columns, comments, steps, reactions, tags, users, notifications, pins, webhooks, search, and board migration.
 
 ## Agent Invariants
 
@@ -107,6 +108,7 @@ Want to change something?
 | user | `user list` | `user show ID` | - | `user update ID` | - | `user deactivate ID` |
 | notification | `notification list` | - | - | - | - | `notification tray`, `notification read-all` |
 | pin | `pin list` | - | - | - | - | `card pin NUMBER`, `card unpin NUMBER` |
+| webhook | `webhook list --board ID` | `webhook show ID --board ID` | `webhook create` | `webhook update ID` | `webhook delete ID` | `webhook reactivate ID` |
 
 ---
 
@@ -158,6 +160,7 @@ Commands supporting `--all` and `--page`:
 - `tag list`
 - `user list`
 - `notification list`
+- `webhook list`
 
 ---
 
@@ -692,6 +695,37 @@ fizzy notification read NOTIFICATION_ID
 fizzy notification read-all
 fizzy notification unread NOTIFICATION_ID
 ```
+
+### Webhooks
+
+Webhooks notify external services when events occur on a board. Requires account admin access.
+
+```bash
+fizzy webhook list --board ID [--page N] [--all]
+fizzy webhook show WEBHOOK_ID --board ID
+fizzy webhook create --board ID --name "Name" --url "https://..." [--actions card_published,card_closed,...]
+fizzy webhook update WEBHOOK_ID --board ID [--name "Name"] [--actions card_closed,...]
+fizzy webhook delete WEBHOOK_ID --board ID
+fizzy webhook reactivate WEBHOOK_ID --board ID    # Reactivate a deactivated webhook
+```
+
+**Supported actions:** `card_assigned`, `card_closed`, `card_postponed`, `card_auto_postponed`, `card_board_changed`, `card_published`, `card_reopened`, `card_sent_back_to_triage`, `card_triaged`, `card_unassigned`, `comment_created`
+
+**Note:** Webhook URL is immutable after creation. Use `--actions` with comma-separated values.
+
+### Webhook Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Webhook ID (use for CLI commands) |
+| `name` | string | Webhook name |
+| `payload_url` | string | Destination URL |
+| `active` | boolean | Whether webhook is active |
+| `signing_secret` | string | Secret for verifying payloads |
+| `subscribed_actions` | array | List of subscribed event actions |
+| `created_at` | timestamp | ISO 8601 |
+| `url` | string | API URL |
+| `board` | object | Nested Board |
 
 ### File Uploads
 
