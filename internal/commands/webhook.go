@@ -65,7 +65,7 @@ var webhookListCmd = &cobra.Command{
 		hasNext := resp.LinkNext != ""
 		if hasNext {
 			nextPage := webhookListPage + 1
-			if nextPage == 0 {
+			if webhookListPage == 0 {
 				nextPage = 2
 			}
 			breadcrumbs = append(breadcrumbs, breadcrumb("next", fmt.Sprintf("fizzy webhook list --board %s --page %d", boardID, nextPage), "Next page"))
