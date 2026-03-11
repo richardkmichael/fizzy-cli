@@ -235,7 +235,7 @@ var accountJoinCodeUpdateCmd = &cobra.Command{
 			return err
 		}
 
-		if accountJoinCodeUpdateUsageLimit == 0 {
+		if !cmd.Flags().Changed("usage-limit") {
 			return newRequiredFlagError("usage-limit")
 		}
 

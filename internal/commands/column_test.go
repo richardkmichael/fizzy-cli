@@ -373,4 +373,14 @@ func TestColumnMoveRight(t *testing.T) {
 			t.Errorf("expected path '/columns/col-1/right_position.json', got '%s'", mock.PostCalls[0].Path)
 		}
 	})
+
+	t.Run("rejects pseudo columns", func(t *testing.T) {
+		mock := NewMockClient()
+		SetTestModeWithSDK(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer resetTest()
+
+		err := columnMoveRightCmd.RunE(columnMoveRightCmd, []string{"not-now"})
+		assertExitCode(t, err, errors.ExitInvalidArgs)
+	})
 }

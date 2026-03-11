@@ -1070,6 +1070,9 @@ func TestCardPublish(t *testing.T) {
 		err := cardPublishCmd.RunE(cardPublishCmd, []string{"42"})
 		assertExitCode(t, err, 0)
 
+		if len(mock.PostCalls) != 1 {
+			t.Fatalf("expected 1 post call, got %d", len(mock.PostCalls))
+		}
 		if mock.PostCalls[0].Path != "/cards/42/publish.json" {
 			t.Errorf("expected path '/cards/42/publish.json', got '%s'", mock.PostCalls[0].Path)
 		}
@@ -1086,6 +1089,9 @@ func TestCardMarkRead(t *testing.T) {
 		err := cardMarkReadCmd.RunE(cardMarkReadCmd, []string{"42"})
 		assertExitCode(t, err, 0)
 
+		if len(mock.PostCalls) != 1 {
+			t.Fatalf("expected 1 post call, got %d", len(mock.PostCalls))
+		}
 		if mock.PostCalls[0].Path != "/cards/42/reading.json" {
 			t.Errorf("expected path '/cards/42/reading.json', got '%s'", mock.PostCalls[0].Path)
 		}
@@ -1102,6 +1108,9 @@ func TestCardMarkUnread(t *testing.T) {
 		err := cardMarkUnreadCmd.RunE(cardMarkUnreadCmd, []string{"42"})
 		assertExitCode(t, err, 0)
 
+		if len(mock.DeleteCalls) != 1 {
+			t.Fatalf("expected 1 delete call, got %d", len(mock.DeleteCalls))
+		}
 		if mock.DeleteCalls[0].Path != "/cards/42/reading.json" {
 			t.Errorf("expected path '/cards/42/reading.json', got '%s'", mock.DeleteCalls[0].Path)
 		}

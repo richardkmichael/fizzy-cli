@@ -263,9 +263,12 @@ func TestAccountJoinCodeUpdate(t *testing.T) {
 		SetTestConfig("token", "account", "https://api.example.com")
 		defer resetTest()
 
-		accountJoinCodeUpdateUsageLimit = 10
+		accountJoinCodeUpdateCmd.Flags().Set("usage-limit", "10")
+		defer func() {
+			accountJoinCodeUpdateUsageLimit = 0
+			accountJoinCodeUpdateCmd.Flags().Lookup("usage-limit").Changed = false
+		}()
 		err := accountJoinCodeUpdateCmd.RunE(accountJoinCodeUpdateCmd, []string{})
-		accountJoinCodeUpdateUsageLimit = 0
 
 		assertExitCode(t, err, 0)
 		if mock.PatchCalls[0].Path != "/account/join_code.json" {
