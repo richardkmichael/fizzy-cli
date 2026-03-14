@@ -31,6 +31,25 @@ func newJQWriter(dest io.Writer, filter string) (*jqWriter, error) {
 	return &jqWriter{dest: dest, code: code}, nil
 }
 
+// newJQWriterWithCode creates a jqWriter using a pre-compiled *gojq.Code.
+// Used when the expression has already been validated and compiled (e.g. in PersistentPreRunE).
+func newJQWriterWithCode(dest io.Writer, code *gojq.Code) *jqWriter {
+	return &jqWriter{dest: dest, code: code}
+}
+
+// compileJQ parses and compiles a jq expression, returning the compiled code.
+func compileJQ(filter string) (*gojq.Code, error) {
+	query, err := gojq.Parse(filter)
+	if err != nil {
+		return nil, errors.ErrJQValidation(err)
+	}
+	code, err := gojq.Compile(query, gojq.WithEnvironLoader(os.Environ))
+	if err != nil {
+		return nil, errors.ErrJQValidation(err)
+	}
+	return code, nil
+}
+
 // Write intercepts JSON output, applies the jq filter, and writes filtered results.
 // String results print as plain text; everything else prints as compact single-line JSON.
 // Error envelopes (ok: false) pass through unfiltered so error messages are never hidden.

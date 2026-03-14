@@ -76,7 +76,9 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Early jq validation: check flag conflicts first (actionable message),
 		// then parse + compile before RunE so invalid expressions are rejected
-		// with no side effects.
+		// with no side effects. The compiled code is reused below to avoid
+		// parsing the expression twice.
+		var jqCode *gojq.Code
 		if cfgJQ != "" {
 			if cfgIDsOnly {
 				return errors.ErrJQConflict("--ids-only")
@@ -84,12 +86,10 @@ var rootCmd = &cobra.Command{
 			if cfgCount {
 				return errors.ErrJQConflict("--count")
 			}
-			q, err := gojq.Parse(cfgJQ)
+			var err error
+			jqCode, err = compileJQ(cfgJQ)
 			if err != nil {
-				return errors.ErrJQValidation(err)
-			}
-			if _, err := gojq.Compile(q, gojq.WithEnvironLoader(os.Environ)); err != nil {
-				return errors.ErrJQValidation(err)
+				return err
 			}
 		}
 
@@ -102,23 +102,15 @@ var rootCmd = &cobra.Command{
 			// Test mode — preserve test buffer as writer.
 			outWriter = &testBuf
 			var w io.Writer = &testBuf
-			if cfgJQ != "" {
-				jw, err := newJQWriter(&testBuf, cfgJQ)
-				if err != nil {
-					return err
-				}
-				w = jw
+			if jqCode != nil {
+				w = newJQWriterWithCode(&testBuf, jqCode)
 			}
 			out = output.New(output.Options{Format: format, Writer: w})
 		} else {
 			outWriter = os.Stdout
 			var w io.Writer = os.Stdout
-			if cfgJQ != "" {
-				jw, err := newJQWriter(os.Stdout, cfgJQ)
-				if err != nil {
-					return err
-				}
-				w = jw
+			if jqCode != nil {
+				w = newJQWriterWithCode(os.Stdout, jqCode)
 			}
 			out = output.New(output.Options{Format: format, Writer: w})
 		}
