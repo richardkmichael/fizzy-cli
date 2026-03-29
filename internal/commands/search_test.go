@@ -134,9 +134,7 @@ func TestSearch(t *testing.T) {
 		cfg.Board = "default-board-id"
 		defer resetTest()
 
-		searchBoard = ""
 		err := searchCmd.RunE(searchCmd, []string{"bug"})
-		searchBoard = ""
 
 		assertExitCode(t, err, 0)
 		if len(mock.GetWithPaginationCalls) != 1 {
