@@ -3,8 +3,8 @@ package commands
 import (
 	"testing"
 
-	"github.com/robzolkos/fizzy-cli/internal/client"
-	"github.com/robzolkos/fizzy-cli/internal/errors"
+	"github.com/basecamp/fizzy-cli/internal/client"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 )
 
 func TestParseDuration(t *testing.T) {
@@ -74,19 +74,15 @@ func TestTimeList(t *testing.T) {
 			},
 		}
 
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeListCard = "42"
-		RunTestCommand(func() {
-			timeListCmd.Run(timeListCmd, []string{})
-		})
+		err := timeListCmd.RunE(timeListCmd, []string{})
 		timeListCard = ""
 
-		if result.ExitCode != 0 {
-			t.Errorf("expected exit code 0, got %d", result.ExitCode)
-		}
+		assertExitCode(t, err, 0)
 		if mock.GetWithPaginationCalls[0].Path != "/cards/42/time_entries.json" {
 			t.Errorf("expected path '/cards/42/time_entries.json', got '%s'", mock.GetWithPaginationCalls[0].Path)
 		}
@@ -94,18 +90,13 @@ func TestTimeList(t *testing.T) {
 
 	t.Run("requires --card flag", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeListCard = ""
-		RunTestCommand(func() {
-			timeListCmd.Run(timeListCmd, []string{})
-		})
-
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		err := timeListCmd.RunE(timeListCmd, []string{})
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 }
 
@@ -121,19 +112,15 @@ func TestTimeShow(t *testing.T) {
 			},
 		}
 
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeShowCard = "42"
-		RunTestCommand(func() {
-			timeShowCmd.Run(timeShowCmd, []string{"entry-1"})
-		})
+		err := timeShowCmd.RunE(timeShowCmd, []string{"entry-1"})
 		timeShowCard = ""
 
-		if result.ExitCode != 0 {
-			t.Errorf("expected exit code 0, got %d", result.ExitCode)
-		}
+		assertExitCode(t, err, 0)
 		if mock.GetCalls[0].Path != "/cards/42/time_entries/entry-1.json" {
 			t.Errorf("expected path '/cards/42/time_entries/entry-1.json', got '%s'", mock.GetCalls[0].Path)
 		}
@@ -141,18 +128,13 @@ func TestTimeShow(t *testing.T) {
 
 	t.Run("requires --card flag", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeShowCard = ""
-		RunTestCommand(func() {
-			timeShowCmd.Run(timeShowCmd, []string{"entry-1"})
-		})
-
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		err := timeShowCmd.RunE(timeShowCmd, []string{"entry-1"})
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 }
 
@@ -171,25 +153,21 @@ func TestTimeAdd(t *testing.T) {
 			},
 		}
 
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeAddCard = "42"
 		timeAddDate = "2026-02-18"
 		timeAddDuration = "1:30"
 		timeAddDescription = "planning work"
-		RunTestCommand(func() {
-			timeAddCmd.Run(timeAddCmd, []string{})
-		})
+		err := timeAddCmd.RunE(timeAddCmd, []string{})
 		timeAddCard = ""
 		timeAddDate = ""
 		timeAddDuration = ""
 		timeAddDescription = ""
 
-		if result.ExitCode != 0 {
-			t.Errorf("expected exit code 0, got %d", result.ExitCode)
-		}
+		assertExitCode(t, err, 0)
 		if mock.PostCalls[0].Path != "/cards/42/time_entries.json" {
 			t.Errorf("expected path '/cards/42/time_entries.json', got '%s'", mock.PostCalls[0].Path)
 		}
@@ -215,83 +193,67 @@ func TestTimeAdd(t *testing.T) {
 
 	t.Run("requires --card flag", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeAddCard = ""
 		timeAddDate = "2026-02-18"
 		timeAddDuration = "1:00"
-		RunTestCommand(func() {
-			timeAddCmd.Run(timeAddCmd, []string{})
-		})
+		err := timeAddCmd.RunE(timeAddCmd, []string{})
 		timeAddDate = ""
 		timeAddDuration = ""
 
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 
 	t.Run("requires --date flag", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeAddCard = "42"
 		timeAddDate = ""
 		timeAddDuration = "1:00"
-		RunTestCommand(func() {
-			timeAddCmd.Run(timeAddCmd, []string{})
-		})
+		err := timeAddCmd.RunE(timeAddCmd, []string{})
 		timeAddCard = ""
 		timeAddDuration = ""
 
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 
 	t.Run("requires --duration flag", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeAddCard = "42"
 		timeAddDate = "2026-02-18"
 		timeAddDuration = ""
-		RunTestCommand(func() {
-			timeAddCmd.Run(timeAddCmd, []string{})
-		})
+		err := timeAddCmd.RunE(timeAddCmd, []string{})
 		timeAddCard = ""
 		timeAddDate = ""
 
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 
 	t.Run("rejects invalid duration format", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeAddCard = "42"
 		timeAddDate = "2026-02-18"
 		timeAddDuration = "invalid"
-		RunTestCommand(func() {
-			timeAddCmd.Run(timeAddCmd, []string{})
-		})
+		err := timeAddCmd.RunE(timeAddCmd, []string{})
 		timeAddCard = ""
 		timeAddDate = ""
 		timeAddDuration = ""
 
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 }
 
@@ -307,23 +269,19 @@ func TestTimeRemove(t *testing.T) {
 			Data:       map[string]interface{}{"id": "entry-2", "total_minutes": float64(-60)},
 		}
 
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeRemoveCard = "42"
 		timeRemoveDate = "2026-02-18"
 		timeRemoveDuration = "1:00"
-		RunTestCommand(func() {
-			timeRemoveCmd.Run(timeRemoveCmd, []string{})
-		})
+		err := timeRemoveCmd.RunE(timeRemoveCmd, []string{})
 		timeRemoveCard = ""
 		timeRemoveDate = ""
 		timeRemoveDuration = ""
 
-		if result.ExitCode != 0 {
-			t.Errorf("expected exit code 0, got %d", result.ExitCode)
-		}
+		assertExitCode(t, err, 0)
 		body := mock.PostCalls[0].Body.(map[string]interface{})
 		if body["commit"] != "remove" {
 			t.Errorf("expected commit 'remove', got '%v'", body["commit"])
@@ -353,21 +311,17 @@ func TestTimeUpdate(t *testing.T) {
 			},
 		}
 
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeUpdateCard = "42"
 		timeUpdateDuration = "2:00"
-		RunTestCommand(func() {
-			timeUpdateCmd.Run(timeUpdateCmd, []string{"entry-1"})
-		})
+		err := timeUpdateCmd.RunE(timeUpdateCmd, []string{"entry-1"})
 		timeUpdateCard = ""
 		timeUpdateDuration = ""
 
-		if result.ExitCode != 0 {
-			t.Errorf("expected exit code 0, got %d", result.ExitCode)
-		}
+		assertExitCode(t, err, 0)
 		if mock.PatchCalls[0].Path != "/cards/42/time_entries/entry-1.json" {
 			t.Errorf("expected patch path '/cards/42/time_entries/entry-1.json', got '%s'", mock.PatchCalls[0].Path)
 		}
@@ -387,37 +341,28 @@ func TestTimeUpdate(t *testing.T) {
 
 	t.Run("requires --card flag", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeUpdateCard = ""
-		RunTestCommand(func() {
-			timeUpdateCmd.Run(timeUpdateCmd, []string{"entry-1"})
-		})
-
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		err := timeUpdateCmd.RunE(timeUpdateCmd, []string{"entry-1"})
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 
 	t.Run("rejects invalid duration format", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeUpdateCard = "42"
 		timeUpdateDuration = "bad"
-		RunTestCommand(func() {
-			timeUpdateCmd.Run(timeUpdateCmd, []string{"entry-1"})
-		})
+		err := timeUpdateCmd.RunE(timeUpdateCmd, []string{"entry-1"})
 		timeUpdateCard = ""
 		timeUpdateDuration = ""
 
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 }
 
@@ -429,19 +374,15 @@ func TestTimeDelete(t *testing.T) {
 			Data:       map[string]interface{}{},
 		}
 
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeDeleteCard = "42"
-		RunTestCommand(func() {
-			timeDeleteCmd.Run(timeDeleteCmd, []string{"entry-1"})
-		})
+		err := timeDeleteCmd.RunE(timeDeleteCmd, []string{"entry-1"})
 		timeDeleteCard = ""
 
-		if result.ExitCode != 0 {
-			t.Errorf("expected exit code 0, got %d", result.ExitCode)
-		}
+		assertExitCode(t, err, 0)
 		if mock.DeleteCalls[0].Path != "/cards/42/time_entries/entry-1.json" {
 			t.Errorf("expected path '/cards/42/time_entries/entry-1.json', got '%s'", mock.DeleteCalls[0].Path)
 		}
@@ -449,17 +390,12 @@ func TestTimeDelete(t *testing.T) {
 
 	t.Run("requires --card flag", func(t *testing.T) {
 		mock := NewMockClient()
-		result := SetTestMode(mock)
+		SetTestModeWithSDK(mock)
 		SetTestConfig("token", "account", "https://api.example.com")
-		defer ResetTestMode()
+		defer resetTest()
 
 		timeDeleteCard = ""
-		RunTestCommand(func() {
-			timeDeleteCmd.Run(timeDeleteCmd, []string{"entry-1"})
-		})
-
-		if result.ExitCode != errors.ExitInvalidArgs {
-			t.Errorf("expected exit code %d, got %d", errors.ExitInvalidArgs, result.ExitCode)
-		}
+		err := timeDeleteCmd.RunE(timeDeleteCmd, []string{"entry-1"})
+		assertExitCode(t, err, errors.ExitInvalidArgs)
 	})
 }
