@@ -2,12 +2,10 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
-	"github.com/robzolkos/fizzy-cli/internal/errors"
-	"github.com/robzolkos/fizzy-cli/internal/response"
+	"github.com/basecamp/fizzy-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -46,13 +44,13 @@ var timeListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List time entries for a card",
 	Long:  "Lists all time entries for a specific card.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuthAndAccount(); err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		if timeListCard == "" {
-			exitWithError(newRequiredFlagError("card"))
+			return newRequiredFlagError("card")
 		}
 
 		c := getClient()
@@ -63,7 +61,7 @@ var timeListCmd = &cobra.Command{
 
 		resp, err := c.GetWithPagination(path, timeListAll)
 		if err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		count := 0
@@ -77,13 +75,14 @@ var timeListCmd = &cobra.Command{
 			summary += fmt.Sprintf(" (page %d)", timeListPage)
 		}
 
-		breadcrumbs := []response.Breadcrumb{
+		breadcrumbs := []Breadcrumb{
 			breadcrumb("add", fmt.Sprintf("fizzy time add --card %s --date <date> --duration <HH:MM>", timeListCard), "Log time"),
 			breadcrumb("card", fmt.Sprintf("fizzy card show %s", timeListCard), "View card"),
 		}
 
 		hasNext := resp.LinkNext != ""
-		printSuccessWithPaginationAndBreadcrumbs(resp.Data, hasNext, resp.LinkNext, summary, breadcrumbs)
+		printListPaginated(resp.Data, nil, hasNext, resp.LinkNext, timeListAll, summary, breadcrumbs)
+		return nil
 	},
 }
 
@@ -95,13 +94,13 @@ var timeShowCmd = &cobra.Command{
 	Short: "Show a time entry",
 	Long:  "Shows details of a specific time entry.",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuthAndAccount(); err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		if timeShowCard == "" {
-			exitWithError(newRequiredFlagError("card"))
+			return newRequiredFlagError("card")
 		}
 
 		entryID := args[0]
@@ -110,25 +109,26 @@ var timeShowCmd = &cobra.Command{
 		c := getClient()
 		resp, err := c.Get("/cards/" + cardNumber + "/time_entries/" + entryID + ".json")
 		if err != nil {
-			exitWithError(err)
+			return err
 		}
 
-		breadcrumbs := []response.Breadcrumb{
+		breadcrumbs := []Breadcrumb{
 			breadcrumb("update", fmt.Sprintf("fizzy time update %s --card %s", entryID, cardNumber), "Edit time entry"),
 			breadcrumb("delete", fmt.Sprintf("fizzy time delete %s --card %s", entryID, cardNumber), "Delete time entry"),
 			breadcrumb("list", fmt.Sprintf("fizzy time list --card %s", cardNumber), "List time entries"),
 		}
 
-		printSuccessWithBreadcrumbs(resp.Data, "", breadcrumbs)
+		printDetail(resp.Data, "", breadcrumbs)
+		return nil
 	},
 }
 
 // postTimeEntry is shared logic for the add and remove subcommands.
 // Both POST to the same endpoint; commit is "add" or "remove".
-func postTimeEntry(cardNumber, date, duration, description, commit string) {
+func postTimeEntry(cardNumber, date, duration, description, commit string) error {
 	hours, minutes, err := parseDuration(duration)
 	if err != nil {
-		exitWithError(errors.NewInvalidArgsError(err.Error()))
+		return errors.NewInvalidArgsError(err.Error())
 	}
 
 	entryParams := map[string]interface{}{
@@ -148,10 +148,10 @@ func postTimeEntry(cardNumber, date, duration, description, commit string) {
 	c := getClient()
 	resp, err := c.Post("/cards/"+cardNumber+"/time_entries.json", reqBody)
 	if err != nil {
-		exitWithError(err)
+		return err
 	}
 
-	breadcrumbs := []response.Breadcrumb{
+	breadcrumbs := []Breadcrumb{
 		breadcrumb("list", fmt.Sprintf("fizzy time list --card %s", cardNumber), "List time entries"),
 		breadcrumb("card", fmt.Sprintf("fizzy card show %s", cardNumber), "View card"),
 	}
@@ -166,27 +166,20 @@ func postTimeEntry(cardNumber, date, duration, description, commit string) {
 				}
 			}
 			if entryID != "" {
-				breadcrumbs = append([]response.Breadcrumb{
+				breadcrumbs = append([]Breadcrumb{
 					breadcrumb("view", fmt.Sprintf("fizzy time show %s --card %s", entryID, cardNumber), "View time entry"),
 				}, breadcrumbs...)
 			}
 
-			respObj := response.SuccessWithBreadcrumbs(followResp.Data, "", breadcrumbs)
-			respObj.Location = resp.Location
-			if lastResult != nil {
-				lastResult.Response = respObj
-				lastResult.ExitCode = 0
-				panic(testExitSignal{})
-			}
-			respObj.Print()
-			os.Exit(0)
-			return
+			printMutationWithLocation(followResp.Data, resp.Location, breadcrumbs)
+			return nil
 		}
-		printSuccessWithLocation(nil, resp.Location)
-		return
+		printSuccessWithLocationAndBreadcrumbs(nil, resp.Location, breadcrumbs)
+		return nil
 	}
 
 	printSuccessWithBreadcrumbs(resp.Data, "", breadcrumbs)
+	return nil
 }
 
 // time add flags
@@ -199,22 +192,22 @@ var timeAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Log time on a card",
 	Long:  "Logs time worked on a card.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuthAndAccount(); err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		if timeAddCard == "" {
-			exitWithError(newRequiredFlagError("card"))
+			return newRequiredFlagError("card")
 		}
 		if timeAddDate == "" {
-			exitWithError(newRequiredFlagError("date"))
+			return newRequiredFlagError("date")
 		}
 		if timeAddDuration == "" {
-			exitWithError(newRequiredFlagError("duration"))
+			return newRequiredFlagError("duration")
 		}
 
-		postTimeEntry(timeAddCard, timeAddDate, timeAddDuration, timeAddDescription, "add")
+		return postTimeEntry(timeAddCard, timeAddDate, timeAddDuration, timeAddDescription, "add")
 	},
 }
 
@@ -228,22 +221,22 @@ var timeRemoveCmd = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove logged time from a card",
 	Long:  "Removes previously logged time from a card.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuthAndAccount(); err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		if timeRemoveCard == "" {
-			exitWithError(newRequiredFlagError("card"))
+			return newRequiredFlagError("card")
 		}
 		if timeRemoveDate == "" {
-			exitWithError(newRequiredFlagError("date"))
+			return newRequiredFlagError("date")
 		}
 		if timeRemoveDuration == "" {
-			exitWithError(newRequiredFlagError("duration"))
+			return newRequiredFlagError("duration")
 		}
 
-		postTimeEntry(timeRemoveCard, timeRemoveDate, timeRemoveDuration, timeRemoveDescription, "remove")
+		return postTimeEntry(timeRemoveCard, timeRemoveDate, timeRemoveDuration, timeRemoveDescription, "remove")
 	},
 }
 
@@ -258,13 +251,13 @@ var timeUpdateCmd = &cobra.Command{
 	Short: "Update a time entry",
 	Long:  "Updates an existing time entry.",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuthAndAccount(); err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		if timeUpdateCard == "" {
-			exitWithError(newRequiredFlagError("card"))
+			return newRequiredFlagError("card")
 		}
 
 		entryID := args[0]
@@ -277,7 +270,7 @@ var timeUpdateCmd = &cobra.Command{
 		if timeUpdateDuration != "" {
 			hours, minutes, err := parseDuration(timeUpdateDuration)
 			if err != nil {
-				exitWithError(errors.NewInvalidArgsError(err.Error()))
+				return errors.NewInvalidArgsError(err.Error())
 			}
 			entryParams["hours"] = hours
 			entryParams["minutes"] = minutes
@@ -293,21 +286,22 @@ var timeUpdateCmd = &cobra.Command{
 		c := getClient()
 		_, err := c.Patch("/cards/"+cardNumber+"/time_entries/"+entryID+".json", reqBody)
 		if err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		// Update returns 204 No Content — fetch the entry to return it.
 		resp, err := c.Get("/cards/" + cardNumber + "/time_entries/" + entryID + ".json")
 		if err != nil {
-			exitWithError(err)
+			return err
 		}
 
-		breadcrumbs := []response.Breadcrumb{
+		breadcrumbs := []Breadcrumb{
 			breadcrumb("show", fmt.Sprintf("fizzy time show %s --card %s", entryID, cardNumber), "View time entry"),
 			breadcrumb("list", fmt.Sprintf("fizzy time list --card %s", cardNumber), "List time entries"),
 		}
 
-		printSuccessWithBreadcrumbs(resp.Data, "", breadcrumbs)
+		printMutation(resp.Data, "", breadcrumbs)
+		return nil
 	},
 }
 
@@ -319,13 +313,13 @@ var timeDeleteCmd = &cobra.Command{
 	Short: "Delete a time entry",
 	Long:  "Deletes a time entry from a card.",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuthAndAccount(); err != nil {
-			exitWithError(err)
+			return err
 		}
 
 		if timeDeleteCard == "" {
-			exitWithError(newRequiredFlagError("card"))
+			return newRequiredFlagError("card")
 		}
 
 		cardNumber := timeDeleteCard
@@ -333,17 +327,18 @@ var timeDeleteCmd = &cobra.Command{
 		c := getClient()
 		_, err := c.Delete("/cards/" + cardNumber + "/time_entries/" + args[0] + ".json")
 		if err != nil {
-			exitWithError(err)
+			return err
 		}
 
-		breadcrumbs := []response.Breadcrumb{
+		breadcrumbs := []Breadcrumb{
 			breadcrumb("list", fmt.Sprintf("fizzy time list --card %s", cardNumber), "List time entries"),
 			breadcrumb("card", fmt.Sprintf("fizzy card show %s", cardNumber), "View card"),
 		}
 
-		printSuccessWithBreadcrumbs(map[string]interface{}{
+		printMutation(map[string]any{
 			"deleted": true,
 		}, "", breadcrumbs)
+		return nil
 	},
 }
 
