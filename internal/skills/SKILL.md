@@ -123,7 +123,7 @@ All commands support:
 | `--token TOKEN` | API access token |
 | `--profile NAME` | Named profile (for multi-account users) |
 | `--api-url URL` | API base URL (default: https://app.fizzy.do) |
-| `--jq EXPR` | Built-in jq filter (no external jq required; implies --json, or --quiet with --agent) |
+| `--jq EXPR` | Built-in jq filter for machine-readable JSON output (no external jq required; implies --json, or filters raw data with --quiet/--agent; incompatible with --styled, --markdown, --ids-only, and --count) |
 | `--json` | JSON envelope output |
 | `--quiet` | Raw JSON data without envelope |
 | `--styled` | Human-readable styled output (tables, colors) |
@@ -380,7 +380,7 @@ fizzy card list --board BOARD_ID --indexed-by not_now --all
 
 ## Built-in jq Filtering
 
-Use `--jq` for filtering and extracting data. `--jq` implies `--json` — no need to pass both. Never pipe to external jq — use `--jq` instead.
+Use `--jq` for filtering and extracting data. `--jq` implies `--json` (or filters raw data with `--quiet` / `--agent`) — no need to pass both. Never pipe to external jq — use `--jq` instead. `--jq` is for machine-readable JSON output and cannot be combined with `--styled`, `--markdown`, `--ids-only`, or `--count`.
 
 ### Reducing Output
 
@@ -388,8 +388,11 @@ Use `--jq` for filtering and extracting data. `--jq` implies `--json` — no nee
 # Card summary (most useful)
 fizzy card list --jq '[.data[] | {number, title, status, board: .board.name}]'
 
-# First N items
+# First N items from the JSON envelope
 fizzy card list --jq '.data[:5]'
+
+# First N items from raw data only
+fizzy card list --quiet --jq '.[0:5]'
 
 # Just IDs
 fizzy board list --jq '[.data[].id]'

@@ -53,7 +53,7 @@ func TestResolveFormatJQImpliesJSON(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error for --jq --styled")
 		}
-		if !strings.Contains(err.Error(), "--jq cannot be used with") {
+		if !strings.Contains(err.Error(), "--jq filters JSON output") {
 			t.Errorf("unexpected error message: %v", err)
 		}
 	})
