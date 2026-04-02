@@ -157,12 +157,12 @@ func formatValue(v any) string {
 func StyledSummary(data map[string]any, summary string) string {
 	if summary != "" {
 		line := lipgloss.NewStyle().Bold(true).Render("✓ " + summary)
-		if data == nil || len(data) == 0 {
+		if len(data) == 0 {
 			return line + "\n"
 		}
 		return line + "\n\n" + StyledDetail(data, "")
 	}
-	if data == nil || len(data) == 0 {
+	if len(data) == 0 {
 		return lipgloss.NewStyle().Bold(true).Render("✓ Done") + "\n"
 	}
 	return StyledDetail(data, "")

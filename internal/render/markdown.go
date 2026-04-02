@@ -72,12 +72,12 @@ func MarkdownDetail(data map[string]any, summary string) string {
 // If structured data is present, include it below the summary.
 func MarkdownSummary(data map[string]any, summary string) string {
 	if summary != "" {
-		if data == nil || len(data) == 0 {
+		if len(data) == 0 {
 			return fmt.Sprintf("> %s\n", summary)
 		}
 		return fmt.Sprintf("> %s\n\n%s", summary, MarkdownDetail(data, ""))
 	}
-	if data == nil || len(data) == 0 {
+	if len(data) == 0 {
 		return "> Done\n"
 	}
 	return MarkdownDetail(data, "")

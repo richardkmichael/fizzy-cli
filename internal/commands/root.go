@@ -542,10 +542,10 @@ func captureResponse() {
 func printSuccess(data any) {
 	switch out.EffectiveFormat() {
 	case output.FormatStyled:
-		fmt.Fprint(outWriter, renderHumanData(data, "", "", nil, false))
+		fmt.Fprint(outWriter, renderHumanData(data, "", false))
 		captureResponse()
 	case output.FormatMarkdown:
-		fmt.Fprint(outWriter, renderHumanData(data, "", "", nil, true))
+		fmt.Fprint(outWriter, renderHumanData(data, "", true))
 		captureResponse()
 	default:
 		_ = out.OK(data)
@@ -556,10 +556,10 @@ func printSuccess(data any) {
 func printSuccessWithLocation(location string) {
 	switch out.EffectiveFormat() {
 	case output.FormatStyled:
-		fmt.Fprint(outWriter, renderHumanData(nil, "", location, nil, false))
+		fmt.Fprint(outWriter, renderHumanData(nil, location, false))
 		captureResponse()
 	case output.FormatMarkdown:
-		fmt.Fprint(outWriter, renderHumanData(nil, "", location, nil, true))
+		fmt.Fprint(outWriter, renderHumanData(nil, location, true))
 		captureResponse()
 	default:
 		_ = out.OK(nil, output.WithContext("location", location))
@@ -753,37 +753,37 @@ func printMutation(data any, summary string, breadcrumbs []Breadcrumb) {
 	}
 }
 
-func renderHumanData(data any, summary, location string, breadcrumbs []Breadcrumb, markdown bool) string {
+func renderHumanData(data any, location string, markdown bool) string {
 	switch v := data.(type) {
 	case nil:
 		if markdown {
-			return appendHumanSections(render.MarkdownSummary(nil, summary), "", location, breadcrumbs, true)
+			return appendHumanSections(render.MarkdownSummary(nil, ""), "", location, nil, true)
 		}
-		return appendHumanSections(render.StyledSummary(nil, summary), "", location, breadcrumbs, false)
+		return appendHumanSections(render.StyledSummary(nil, ""), "", location, nil, false)
 	case map[string]any:
 		if markdown {
-			return appendHumanSections(render.MarkdownDetail(v, summary), "", location, breadcrumbs, true)
+			return appendHumanSections(render.MarkdownDetail(v, ""), "", location, nil, true)
 		}
-		return appendHumanSections(render.StyledDetail(v, summary), "", location, breadcrumbs, false)
+		return appendHumanSections(render.StyledDetail(v, ""), "", location, nil, false)
 	}
 
 	if maps := toMaps(data); maps != nil {
 		cols := inferColumns(maps)
 		if markdown {
-			return appendHumanSections(render.MarkdownList(maps, cols, summary), "", location, breadcrumbs, true)
+			return appendHumanSections(render.MarkdownList(maps, cols, ""), "", location, nil, true)
 		}
-		return appendHumanSections(render.StyledList(maps, cols, summary), "", location, breadcrumbs, false)
+		return appendHumanSections(render.StyledList(maps, cols, ""), "", location, nil, false)
 	}
 
 	if m := toMap(data); m != nil {
 		if markdown {
-			return appendHumanSections(render.MarkdownDetail(m, summary), "", location, breadcrumbs, true)
+			return appendHumanSections(render.MarkdownDetail(m, ""), "", location, nil, true)
 		}
-		return appendHumanSections(render.StyledDetail(m, summary), "", location, breadcrumbs, false)
+		return appendHumanSections(render.StyledDetail(m, ""), "", location, nil, false)
 	}
 
 	value := fmt.Sprintf("%v\n", data)
-	return appendHumanSections(value, "", location, breadcrumbs, markdown)
+	return appendHumanSections(value, "", location, nil, markdown)
 }
 
 func appendHumanSections(body, notice, location string, breadcrumbs []Breadcrumb, markdown bool) string {
