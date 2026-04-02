@@ -15,7 +15,7 @@ func TestRenderRootHelp(t *testing.T) {
 	renderHelp(rootCmd, &buf)
 	out := buf.String()
 
-	for _, want := range []string{"CORE COMMANDS", "GLOBAL OUTPUT FLAGS", "LEARN MORE"} {
+	for _, want := range []string{"CORE COMMANDS", "FLAGS", "--version", "GLOBAL OUTPUT FLAGS", "LEARN MORE"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("expected root help to contain %q, got:\n%s", want, out)
 		}

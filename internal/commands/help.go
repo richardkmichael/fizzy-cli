@@ -89,6 +89,9 @@ func renderHelp(cmd *cobra.Command, w io.Writer) {
 }
 
 func renderRootHelp(cmd *cobra.Command, w io.Writer) {
+	cmd.InitDefaultHelpFlag()
+	cmd.InitDefaultVersionFlag()
+
 	fmt.Fprintln(w, strings.TrimSpace(cmd.Long))
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "USAGE")
@@ -99,6 +102,12 @@ func renderRootHelp(cmd *cobra.Command, w io.Writer) {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, group.Title)
 		printCommandList(w, group.Commands)
+	}
+
+	if flags := rootLocalFlags(cmd); len(flags) > 0 {
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "FLAGS")
+		printFlags(w, flags)
 	}
 
 	fmt.Fprintln(w)
@@ -122,6 +131,8 @@ func renderRootHelp(cmd *cobra.Command, w io.Writer) {
 }
 
 func renderCommandHelp(cmd *cobra.Command, w io.Writer) {
+	cmd.InitDefaultHelpFlag()
+
 	desc := strings.TrimSpace(cmd.Long)
 	if desc == "" {
 		desc = strings.TrimSpace(cmd.Short)
@@ -280,6 +291,24 @@ func printNamedFlags(w io.Writer, flags *pflag.FlagSet, names []string) {
 		}
 	}
 	printFlags(w, selected)
+}
+
+func rootLocalFlags(cmd *cobra.Command) []*pflag.Flag {
+	excluded := map[string]bool{
+		"agent": true, "api-url": true, "count": true, "ids-only": true,
+		"json": true, "limit": true, "markdown": true, "profile": true,
+		"quiet": true, "styled": true, "token": true, "verbose": true,
+	}
+
+	flags := visibleFlags(cmd.Flags())
+	result := make([]*pflag.Flag, 0, len(flags))
+	for _, f := range flags {
+		if excluded[f.Name] {
+			continue
+		}
+		result = append(result, f)
+	}
+	return result
 }
 
 func visibleFlags(flags *pflag.FlagSet) []*pflag.Flag {

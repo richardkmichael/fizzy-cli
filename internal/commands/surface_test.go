@@ -58,6 +58,7 @@ func TestSurfaceSnapshot(t *testing.T) {
 func initAllHelpFlags(cmd *cobra.Command) {
 	cmd.InitDefaultHelpCmd()
 	cmd.InitDefaultHelpFlag()
+	cmd.InitDefaultVersionFlag()
 	for _, sub := range cmd.Commands() {
 		initAllHelpFlags(sub)
 	}

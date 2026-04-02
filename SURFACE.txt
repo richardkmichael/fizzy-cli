@@ -163,6 +163,7 @@ FLAG fizzy --quiet type=bool
 FLAG fizzy --styled type=bool
 FLAG fizzy --token type=string
 FLAG fizzy --verbose type=bool
+FLAG fizzy --version type=bool
 FLAG fizzy account --agent type=bool
 FLAG fizzy account --api-url type=string
 FLAG fizzy account --count type=bool

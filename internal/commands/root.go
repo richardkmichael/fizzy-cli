@@ -159,7 +159,8 @@ func Execute() {
 	// Default to Auto — PersistentPreRunE will re-resolve from parsed flags.
 	outWriter = os.Stdout
 	out = output.New(output.Options{Format: output.FormatAuto, Writer: os.Stdout})
-	if err := rootCmd.Execute(); err != nil {
+	cmd, err := rootCmd.ExecuteC()
+	if err != nil {
 		if format, formatErr := resolveFormat(); formatErr == nil {
 			out = output.New(output.Options{Format: format, Writer: os.Stdout})
 		}
@@ -170,7 +171,7 @@ func Execute() {
 			e = &output.Error{Code: output.CodeUsage, Message: err.Error()}
 		}
 		if isHumanOutput() {
-			printHumanError(e)
+			printHumanError(cmd, e)
 		} else {
 			_ = out.Err(e)
 		}
@@ -273,7 +274,7 @@ func requestedHumanOutput() bool {
 	return false
 }
 
-func printHumanError(err error) {
+func printHumanError(cmd *cobra.Command, err error) {
 	e := output.AsError(err)
 	msg := strings.TrimSpace(e.Message)
 	if msg != "" {
@@ -283,8 +284,19 @@ func printHumanError(err error) {
 		fmt.Fprintf(os.Stderr, "\nHint: %s\n", e.Hint)
 	}
 	if e.Code == output.CodeUsage && !strings.Contains(msg, "--help") {
-		fmt.Fprintln(os.Stderr, "\nRun `fizzy --help` for usage.")
+		fmt.Fprintf(os.Stderr, "\nRun `%s` for usage.\n", usageHelpCommand(cmd))
 	}
+}
+
+func usageHelpCommand(cmd *cobra.Command) string {
+	if cmd == nil {
+		return rootCmd.CommandPath() + " --help"
+	}
+	path := strings.TrimSpace(cmd.CommandPath())
+	if path == "" {
+		path = rootCmd.CommandPath()
+	}
+	return path + " --help"
 }
 
 func init() {
