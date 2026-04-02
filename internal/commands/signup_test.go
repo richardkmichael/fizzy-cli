@@ -775,6 +775,15 @@ func TestSignupHumanOutputRedactsSecrets(t *testing.T) {
 		if strings.Contains(raw, "signed-pending-token-value") {
 			t.Fatalf("expected styled output to hide pending token, got:\n%s", raw)
 		}
+		if !strings.Contains(raw, "Magic link sent. Check your email for a 6-digit code.") {
+			t.Fatalf("expected styled output to include summary, got:\n%s", raw)
+		}
+		if !strings.Contains(raw, "TEST01") {
+			t.Fatalf("expected styled output to include non-secret dev code, got:\n%s", raw)
+		}
+		if !strings.Contains(raw, "Next steps:") {
+			t.Fatalf("expected styled output to include breadcrumbs, got:\n%s", raw)
+		}
 	})
 
 	t.Run("signup verify hides session token in styled output", func(t *testing.T) {

@@ -400,7 +400,7 @@ func runSignupStart(cmd *cobra.Command, args []string) error {
 		data["code"] = code
 	}
 
-	printMutation(signupHumanData(data), "Magic link sent. Check your email for a 6-digit code.", breadcrumbs)
+	printMutation(signupHumanData(data, "code"), "Magic link sent. Check your email for a 6-digit code.", breadcrumbs)
 	return nil
 }
 
