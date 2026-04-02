@@ -897,9 +897,18 @@ func humanizeFieldName(name string) string {
 			parts[i] = "ID"
 			continue
 		}
-		parts[i] = strings.Title(part)
+		parts[i] = titleWord(part)
 	}
 	return strings.Join(parts, " ")
+}
+
+func titleWord(s string) string {
+	if s == "" {
+		return s
+	}
+	runes := []rune(strings.ToLower(s))
+	runes[0] = []rune(strings.ToUpper(string(runes[0])))[0]
+	return string(runes)
 }
 
 // toMaps converts any (expected []any of map[string]any) to []map[string]any.
