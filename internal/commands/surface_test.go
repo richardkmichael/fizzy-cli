@@ -12,10 +12,13 @@ import (
 )
 
 func TestSurfaceSnapshot(t *testing.T) {
-	// Ensure Cobra has initialized all default help flags and commands
+	// Ensure the command tree matches the configured CLI UX used in real execution.
+	configureCLIUX()
+
+	// Ensure Cobra has initialized all default help flags and commands.
 	initAllHelpFlags(rootCmd)
 
-	// Generate fresh snapshot from the command tree
+	// Generate fresh snapshot from the command tree.
 	fresh := surface.SnapshotString(rootCmd)
 
 	// Read golden file
