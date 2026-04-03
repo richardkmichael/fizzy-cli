@@ -1,0 +1,65 @@
+name: Fork preview
+
+on:
+  schedule:
+    - cron: "20 */12 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: fork-preview
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  test:
+    name: Preview rebase against upstream master
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: time-tracking
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/basecamp/fizzy-cli.git
+          git fetch upstream --tags
+          git fetch upstream master
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase time-tracking onto upstream master (preview only)
+        run: git rebase upstream/master
+
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.10
+          args: --help
+
+      - name: Run checks
+        run: make check
+
+      - name: Verify build
+        run: |
+          make build
+          VERSION=$(./bin/fizzy --version)
+          echo "Version output: $VERSION"
+          {
+            echo "### Preview build"
+            echo "- Rebased onto: upstream/master ($(git rev-parse --short upstream/master))"
+            echo "- Version: \`$VERSION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
