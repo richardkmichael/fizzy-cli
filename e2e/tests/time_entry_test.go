@@ -27,7 +27,7 @@ func TestTimeList(t *testing.T) {
 			t.Fatalf("expected JSON response, got nil\nstdout: %s", result.Stdout)
 		}
 
-		if !result.Response.Success {
+		if !result.Response.OK {
 			t.Error("expected success=true")
 		}
 
@@ -82,7 +82,7 @@ func TestTimeCRUD(t *testing.T) {
 			t.Fatalf("expected JSON response, got nil\nstdout: %s", result.Stdout)
 		}
 
-		if !result.Response.Success {
+		if !result.Response.OK {
 			t.Errorf("expected success=true, error: %+v", result.Response.Error)
 		}
 
@@ -115,7 +115,7 @@ func TestTimeCRUD(t *testing.T) {
 			t.Errorf("expected exit code %d, got %d\nstderr: %s", harness.ExitSuccess, result.ExitCode, result.Stderr)
 		}
 
-		if !result.Response.Success {
+		if !result.Response.OK {
 			t.Error("expected success=true")
 		}
 
@@ -157,7 +157,7 @@ func TestTimeCRUD(t *testing.T) {
 			t.Errorf("expected exit code %d, got %d\nstderr: %s", harness.ExitSuccess, result.ExitCode, result.Stderr)
 		}
 
-		if !result.Response.Success {
+		if !result.Response.OK {
 			t.Error("expected success=true")
 		}
 
@@ -181,7 +181,7 @@ func TestTimeCRUD(t *testing.T) {
 			t.Errorf("expected exit code %d, got %d\nstderr: %s", harness.ExitSuccess, result.ExitCode, result.Stderr)
 		}
 
-		if !result.Response.Success {
+		if !result.Response.OK {
 			t.Error("expected success=true")
 		}
 
