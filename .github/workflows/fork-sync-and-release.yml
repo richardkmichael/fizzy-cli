@@ -1,0 +1,227 @@
+name: Fork sync and release
+
+# Temporarily tracks upstream master until next upstream release (post-v3.0.3),
+# at which point this should switch to tracking release tags.
+# See: upstream module rename from robzolkos/fizzy-cli to basecamp/fizzy-cli.
+
+on:
+  schedule:
+    - cron: "20 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force sync even if already synced against this upstream SHA"
+        type: boolean
+        default: false
+
+concurrency:
+  group: fork-sync
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  check-upstream:
+    name: Check for upstream changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should_sync: ${{ steps.decide.outputs.should_sync }}
+      upstream_sha: ${{ steps.resolve.outputs.upstream_sha }}
+    steps:
+      - name: Resolve upstream master HEAD
+        id: resolve
+        run: |
+          SHA=$(git ls-remote https://github.com/basecamp/fizzy-cli.git refs/heads/master | cut -f1)
+
+          if [ -z "$SHA" ]; then
+            echo "::warning::Could not resolve upstream master HEAD"
+            echo "upstream_sha=" >> "$GITHUB_OUTPUT"
+          else
+            SHORT_SHA="${SHA:0:12}"
+            echo "upstream_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check cache for previous sync
+        if: steps.resolve.outputs.upstream_sha != '' && inputs.force != true
+        id: cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .last-synced-sha
+          key: last-synced-sha-${{ steps.resolve.outputs.upstream_sha }}
+
+      - name: Decide whether to sync
+        id: decide
+        env:
+          UPSTREAM_SHA: ${{ steps.resolve.outputs.upstream_sha }}
+          CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          if [ -z "$UPSTREAM_SHA" ]; then
+            echo "should_sync=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: could not resolve upstream SHA"
+          elif [ "$FORCE" = "true" ]; then
+            echo "should_sync=true" >> "$GITHUB_OUTPUT"
+            echo "Syncing: force=true"
+          elif [ "$CACHE_HIT" = "true" ]; then
+            echo "should_sync=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: already synced against $UPSTREAM_SHA"
+          else
+            echo "should_sync=true" >> "$GITHUB_OUTPUT"
+            echo "Syncing: new upstream master $UPSTREAM_SHA"
+          fi
+
+          {
+            echo "### Fork sync check"
+            echo "- Upstream master: \`$UPSTREAM_SHA\`"
+            echo "- Should sync: \`$(grep should_sync "$GITHUB_OUTPUT" | cut -d= -f2)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  sync-fork:
+    name: Sync fork and rebase
+    needs: check-upstream
+    if: needs.check-upstream.outputs.should_sync == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Server-side sync avoids needing to push workflow file changes
+      # (which requires a PAT — GITHUB_TOKEN cannot push .github/workflows/)
+      - name: Sync fork master from upstream
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: gh repo sync ${{ github.repository }} --branch master
+
+      - name: Checkout fork
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked] -- credentials needed for git push
+        with:
+          ref: time-tracking
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream with tags
+        run: |
+          git remote add upstream https://github.com/basecamp/fizzy-cli.git
+          git fetch upstream --tags
+          git fetch upstream master
+
+      # Tag upstream/master so git describe counts only our commits.
+      # Temporary hack until upstream releases post-v3.0.3, at which
+      # point we switch to tracking release tags directly.
+      - name: Tag upstream master
+        run: |
+          git tag -f upstream-master upstream/master
+          git push origin upstream-master --force
+
+      - name: Rebase time-tracking onto upstream master
+        run: |
+          git checkout time-tracking
+          git rebase upstream/master
+
+      # Force-push is required because rebase rewrites commit SHAs.
+      # The push triggers the CI workflow (test.yml) on time-tracking.
+      - name: Push rebased time-tracking
+        run: git push origin time-tracking --force-with-lease
+
+      - name: Summary
+        env:
+          UPSTREAM_SHA: ${{ needs.check-upstream.outputs.upstream_sha }}
+        run: |
+          HEAD_SHA=$(git rev-parse --short HEAD)
+          VERSION=$(git describe --tags --always)
+          {
+            echo "### Sync complete"
+            echo "- Upstream master: \`$UPSTREAM_SHA\`"
+            echo "- time-tracking HEAD: \`$HEAD_SHA\`"
+            echo "- Version string: \`$VERSION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release-fork:
+    name: Build and release
+    needs: [check-upstream, sync-fork]
+    if: needs.check-upstream.outputs.should_sync == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout rebased time-tracking
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked] -- credentials needed for git push (tag)
+        with:
+          ref: time-tracking
+          fetch-depth: 0
+
+      - name: Fetch upstream tags
+        run: |
+          git remote add upstream https://github.com/basecamp/fizzy-cli.git
+          git fetch upstream --tags
+          git fetch upstream master
+
+      - name: Tag release
+        id: tag
+        run: |
+          # Build a semver-compatible version:
+          #   v3.0.3-tt.3.gabcdef (based on v3.0.3, 3 time-tracking commits, at SHA)
+          UPSTREAM_TAG=$(git describe --tags --match 'v*' --abbrev=0 upstream/master)
+          COMMIT_COUNT=$(git rev-list upstream-master..HEAD --count)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="${UPSTREAM_TAG}-tt.${COMMIT_COUNT}.g${SHORT_SHA}"
+
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping release"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            git tag "$VERSION"
+            git push origin "$VERSION"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        if: steps.tag.outputs.skip != 'true'
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0 # zizmor: ignore[cache-poisoning] -- personal fork, not a public distribution
+        with:
+          go-version-file: go.mod
+
+      - name: Run GoReleaser
+        if: steps.tag.outputs.skip != 'true'
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        with:
+          version: 'v2.14.1'
+          args: release --clean --config .goreleaser.fork.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          REPO="${{ github.repository }}"
+          {
+            echo "### Release"
+            echo "- Version: [\`$VERSION\`](https://github.com/$REPO/releases/tag/$VERSION)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  record:
+    name: Record synced version
+    needs: [check-upstream, release-fork]
+    if: needs.check-upstream.outputs.should_sync == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Save upstream SHA to cache
+        env:
+          UPSTREAM_SHA: ${{ needs.check-upstream.outputs.upstream_sha }}
+        run: |
+          mkdir -p .last-synced-sha
+          echo "$UPSTREAM_SHA" > .last-synced-sha/sha
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        continue-on-error: true
+        with:
+          path: .last-synced-sha
+          key: last-synced-sha-${{ needs.check-upstream.outputs.upstream_sha }}
