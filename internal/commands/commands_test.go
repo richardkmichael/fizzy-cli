@@ -18,11 +18,36 @@ func TestCommandsStyledOutputRendersHumanCatalog(t *testing.T) {
 	}
 
 	raw := TestOutput()
-	if !strings.Contains(raw, "Name") {
-		t.Fatalf("expected styled catalog header, got:\n%s", raw)
+	if !strings.Contains(raw, "CORE COMMANDS") {
+		t.Fatalf("expected styled catalog heading, got:\n%s", raw)
 	}
-	if !strings.Contains(raw, "fizzy auth") {
+	if !strings.Contains(raw, "auth") || !strings.Contains(raw, "board") {
 		t.Fatalf("expected styled catalog to include commands, got:\n%s", raw)
+	}
+	if strings.Contains(raw, "list, show") {
+		t.Fatalf("expected unfiltered styled catalog to omit action lists, got:\n%s", raw)
+	}
+}
+
+func TestCommandsFilterRendersMatchingHumanCatalog(t *testing.T) {
+	mock := NewMockClient()
+	SetTestModeWithSDK(mock)
+	SetTestFormat(output.FormatStyled)
+	defer resetTest()
+
+	if err := commandsCmd.RunE(commandsCmd, []string{"auth"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	raw := TestOutput()
+	if !strings.Contains(raw, "auth") {
+		t.Fatalf("expected filtered catalog to include auth, got:\n%s", raw)
+	}
+	if strings.Contains(raw, "board") {
+		t.Fatalf("expected filtered catalog to omit non-matching board command, got:\n%s", raw)
+	}
+	if !strings.Contains(raw, "list, login, logout, status, switch") {
+		t.Fatalf("expected filtered catalog to include action list, got:\n%s", raw)
 	}
 }
 
@@ -54,6 +79,9 @@ func TestCommandsJSONOutputReturnsStructuredCatalog(t *testing.T) {
 			continue
 		}
 		if entry["name"] == "fizzy commands" {
+			if entry["category"] != "utilities" {
+				t.Fatalf("expected fizzy commands category utilities, got %#v", entry["category"])
+			}
 			found = true
 			break
 		}

@@ -75,6 +75,7 @@ var rootCmd = &cobra.Command{
 	Short:   "Fizzy CLI - Command-line interface for the Fizzy API",
 	Long:    `Command-line interface for Fizzy`,
 	Version: "dev",
+	RunE:    runRootDefault,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		errOutputWrite = nil
 		// Early jq validation: check flag conflicts first (actionable message),

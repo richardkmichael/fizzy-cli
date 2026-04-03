@@ -345,6 +345,39 @@ func runCobraWithArgs(args ...string) (string, error) {
 	return lastRawOutput, err
 }
 
+func TestBareRootNonTTYReturnsQuickStartJSON(t *testing.T) {
+	mock := NewMockClient()
+	SetTestModeWithSDK(mock)
+	SetTestConfig("token", "account", "https://api.example.com")
+	defer resetTest()
+
+	raw, err := runCobraWithArgs()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
+		t.Fatalf("expected JSON object, got parse error: %v\noutput: %s", err, raw)
+	}
+	if resp["ok"] != true {
+		t.Fatalf("expected ok response, got %#v", resp)
+	}
+	if _, ok := resp["summary"].(string); !ok {
+		t.Fatalf("expected summary string, got %#v", resp["summary"])
+	}
+	data, ok := resp["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected data object, got %#v", resp["data"])
+	}
+	if data["version"] == nil {
+		t.Fatalf("expected version in quick start response, got %#v", data)
+	}
+	if _, ok := data["commands"].(map[string]any); !ok {
+		t.Fatalf("expected commands block, got %#v", data["commands"])
+	}
+}
+
 func TestCobraFormatCount(t *testing.T) {
 	mock := NewMockClient()
 	mock.GetWithPaginationResponse = &client.APIResponse{
