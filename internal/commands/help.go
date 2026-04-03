@@ -66,9 +66,6 @@ func installHumanHelp() {
 			agentHelp(cmd, args)
 			return
 		}
-		if cmd == rootCmd {
-			printBanner()
-		}
 		renderHelp(cmd, outWriter)
 	})
 }
@@ -104,19 +101,12 @@ func renderRootHelp(cmd *cobra.Command, w io.Writer) {
 		printCommandList(w, group.Commands)
 	}
 
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "FLAGS")
+	printNamedFlags(w, cmd.PersistentFlags(), []string{"json", "jq", "quiet", "profile", "verbose"})
 	if flags := rootLocalFlags(cmd); len(flags) > 0 {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, "FLAGS")
 		printFlags(w, flags)
 	}
-
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "GLOBAL OUTPUT FLAGS")
-	printNamedFlags(w, cmd.PersistentFlags(), []string{"json", "quiet", "styled", "markdown", "ids-only", "count", "limit"})
-
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "GLOBAL CONFIG FLAGS")
-	printNamedFlags(w, cmd.PersistentFlags(), []string{"profile", "token", "api-url", "verbose", "agent"})
 
 	if cmd.Example != "" {
 		fmt.Fprintln(w)
@@ -126,6 +116,7 @@ func renderRootHelp(cmd *cobra.Command, w io.Writer) {
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "LEARN MORE")
+	fmt.Fprintln(w, "  Use `fizzy commands` to see the full command catalog.")
 	fmt.Fprintln(w, "  Use `fizzy <command> --help` for more information about a command.")
 	fmt.Fprintln(w, "  Use `fizzy commands --json` for a structured command catalog.")
 }
@@ -296,8 +287,9 @@ func printNamedFlags(w io.Writer, flags *pflag.FlagSet, names []string) {
 func rootLocalFlags(cmd *cobra.Command) []*pflag.Flag {
 	excluded := map[string]bool{
 		"agent": true, "api-url": true, "count": true, "ids-only": true,
-		"json": true, "limit": true, "markdown": true, "profile": true,
-		"quiet": true, "styled": true, "token": true, "verbose": true,
+		"jq": true, "json": true, "limit": true, "markdown": true,
+		"profile": true, "quiet": true, "styled": true, "token": true,
+		"verbose": true,
 	}
 
 	flags := visibleFlags(cmd.Flags())
@@ -376,20 +368,20 @@ func printExampleBlock(w io.Writer, example string) {
 	}
 }
 
-var rootCommandGroupsOrder = []string{"core", "collaboration", "admin", "utilities"}
+var rootCommandGroupsOrder = []string{"core", "collaboration", "getting-started", "discover"}
 
 var rootCommandGroupTitles = map[string]string{
-	"core":          "CORE COMMANDS",
-	"collaboration": "COLLABORATION COMMANDS",
-	"admin":         "ADMINISTRATION COMMANDS",
-	"utilities":     "UTILITIES",
+	"core":            "CORE COMMANDS",
+	"collaboration":   "COLLABORATION",
+	"getting-started": "GETTING STARTED",
+	"discover":        "DISCOVER",
 }
 
 var rootCommandGroups = map[string][]string{
-	"core":          {"auth", "board", "card", "comment", "search", "step", "column"},
-	"collaboration": {"notification", "pin", "reaction", "tag", "user"},
-	"admin":         {"account", "identity", "migrate", "upload", "webhook"},
-	"utilities":     {"commands", "completion", "setup", "signup", "skill", "version"},
+	"core":            {"auth", "board", "card", "search"},
+	"collaboration":   {"comment", "notification"},
+	"getting-started": {"setup", "signup"},
+	"discover":        {"commands", "version"},
 }
 
 var commandExamples = map[string]string{

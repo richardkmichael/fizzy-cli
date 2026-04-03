@@ -4,7 +4,9 @@ ARG fizzy board help 00 [command]
 ARG fizzy card attachments download 00 [ATTACHMENT_INDEX]
 ARG fizzy card attachments help 00 [command]
 ARG fizzy card help 00 [command]
+ARG fizzy cmds 00 [filter]
 ARG fizzy column help 00 [command]
+ARG fizzy commands 00 [filter]
 ARG fizzy comment attachments download 00 [ATTACHMENT_INDEX]
 ARG fizzy comment attachments help 00 [command]
 ARG fizzy comment help 00 [command]
@@ -94,6 +96,7 @@ CMD fizzy card unwatch
 CMD fizzy card update
 CMD fizzy card view
 CMD fizzy card watch
+CMD fizzy cmds
 CMD fizzy column
 CMD fizzy column create
 CMD fizzy column delete
@@ -1272,6 +1275,20 @@ FLAG fizzy card watch --quiet type=bool
 FLAG fizzy card watch --styled type=bool
 FLAG fizzy card watch --token type=string
 FLAG fizzy card watch --verbose type=bool
+FLAG fizzy cmds --agent type=bool
+FLAG fizzy cmds --api-url type=string
+FLAG fizzy cmds --count type=bool
+FLAG fizzy cmds --help type=bool
+FLAG fizzy cmds --ids-only type=bool
+FLAG fizzy cmds --jq type=string
+FLAG fizzy cmds --json type=bool
+FLAG fizzy cmds --limit type=int
+FLAG fizzy cmds --markdown type=bool
+FLAG fizzy cmds --profile type=string
+FLAG fizzy cmds --quiet type=bool
+FLAG fizzy cmds --styled type=bool
+FLAG fizzy cmds --token type=string
+FLAG fizzy cmds --verbose type=bool
 FLAG fizzy column --agent type=bool
 FLAG fizzy column --api-url type=string
 FLAG fizzy column --count type=bool
@@ -3011,6 +3028,7 @@ SUB fizzy card unwatch
 SUB fizzy card update
 SUB fizzy card view
 SUB fizzy card watch
+SUB fizzy cmds
 SUB fizzy column
 SUB fizzy column create
 SUB fizzy column delete
