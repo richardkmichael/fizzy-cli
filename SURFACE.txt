@@ -23,6 +23,7 @@ ARG fizzy signup help 00 [command]
 ARG fizzy skill help 00 [command]
 ARG fizzy step help 00 [command]
 ARG fizzy tag help 00 [command]
+ARG fizzy time help 00 [command]
 ARG fizzy upload help 00 [command]
 ARG fizzy user help 00 [command]
 ARG fizzy webhook help 00 [command]
@@ -188,6 +189,17 @@ CMD fizzy tag
 CMD fizzy tag help
 CMD fizzy tag list
 CMD fizzy tag ls
+CMD fizzy time
+CMD fizzy time add
+CMD fizzy time delete
+CMD fizzy time help
+CMD fizzy time list
+CMD fizzy time ls
+CMD fizzy time remove
+CMD fizzy time rm
+CMD fizzy time show
+CMD fizzy time update
+CMD fizzy time view
 CMD fizzy upload
 CMD fizzy upload file
 CMD fizzy upload help
@@ -2646,6 +2658,182 @@ FLAG fizzy tag ls --quiet type=bool
 FLAG fizzy tag ls --styled type=bool
 FLAG fizzy tag ls --token type=string
 FLAG fizzy tag ls --verbose type=bool
+FLAG fizzy time --agent type=bool
+FLAG fizzy time --api-url type=string
+FLAG fizzy time --count type=bool
+FLAG fizzy time --help type=bool
+FLAG fizzy time --ids-only type=bool
+FLAG fizzy time --jq type=string
+FLAG fizzy time --json type=bool
+FLAG fizzy time --limit type=int
+FLAG fizzy time --markdown type=bool
+FLAG fizzy time --profile type=string
+FLAG fizzy time --quiet type=bool
+FLAG fizzy time --styled type=bool
+FLAG fizzy time --token type=string
+FLAG fizzy time --verbose type=bool
+FLAG fizzy time add --agent type=bool
+FLAG fizzy time add --api-url type=string
+FLAG fizzy time add --card type=string
+FLAG fizzy time add --count type=bool
+FLAG fizzy time add --date type=string
+FLAG fizzy time add --description type=string
+FLAG fizzy time add --duration type=string
+FLAG fizzy time add --help type=bool
+FLAG fizzy time add --ids-only type=bool
+FLAG fizzy time add --jq type=string
+FLAG fizzy time add --json type=bool
+FLAG fizzy time add --limit type=int
+FLAG fizzy time add --markdown type=bool
+FLAG fizzy time add --profile type=string
+FLAG fizzy time add --quiet type=bool
+FLAG fizzy time add --styled type=bool
+FLAG fizzy time add --token type=string
+FLAG fizzy time add --verbose type=bool
+FLAG fizzy time delete --agent type=bool
+FLAG fizzy time delete --api-url type=string
+FLAG fizzy time delete --card type=string
+FLAG fizzy time delete --count type=bool
+FLAG fizzy time delete --help type=bool
+FLAG fizzy time delete --ids-only type=bool
+FLAG fizzy time delete --jq type=string
+FLAG fizzy time delete --json type=bool
+FLAG fizzy time delete --limit type=int
+FLAG fizzy time delete --markdown type=bool
+FLAG fizzy time delete --profile type=string
+FLAG fizzy time delete --quiet type=bool
+FLAG fizzy time delete --styled type=bool
+FLAG fizzy time delete --token type=string
+FLAG fizzy time delete --verbose type=bool
+FLAG fizzy time help --agent type=bool
+FLAG fizzy time help --api-url type=string
+FLAG fizzy time help --count type=bool
+FLAG fizzy time help --help type=bool
+FLAG fizzy time help --ids-only type=bool
+FLAG fizzy time help --jq type=string
+FLAG fizzy time help --json type=bool
+FLAG fizzy time help --limit type=int
+FLAG fizzy time help --markdown type=bool
+FLAG fizzy time help --profile type=string
+FLAG fizzy time help --quiet type=bool
+FLAG fizzy time help --styled type=bool
+FLAG fizzy time help --token type=string
+FLAG fizzy time help --verbose type=bool
+FLAG fizzy time list --agent type=bool
+FLAG fizzy time list --all type=bool
+FLAG fizzy time list --api-url type=string
+FLAG fizzy time list --card type=string
+FLAG fizzy time list --count type=bool
+FLAG fizzy time list --help type=bool
+FLAG fizzy time list --ids-only type=bool
+FLAG fizzy time list --jq type=string
+FLAG fizzy time list --json type=bool
+FLAG fizzy time list --limit type=int
+FLAG fizzy time list --markdown type=bool
+FLAG fizzy time list --page type=int
+FLAG fizzy time list --profile type=string
+FLAG fizzy time list --quiet type=bool
+FLAG fizzy time list --styled type=bool
+FLAG fizzy time list --token type=string
+FLAG fizzy time list --verbose type=bool
+FLAG fizzy time ls --agent type=bool
+FLAG fizzy time ls --all type=bool
+FLAG fizzy time ls --api-url type=string
+FLAG fizzy time ls --card type=string
+FLAG fizzy time ls --count type=bool
+FLAG fizzy time ls --help type=bool
+FLAG fizzy time ls --ids-only type=bool
+FLAG fizzy time ls --jq type=string
+FLAG fizzy time ls --json type=bool
+FLAG fizzy time ls --limit type=int
+FLAG fizzy time ls --markdown type=bool
+FLAG fizzy time ls --page type=int
+FLAG fizzy time ls --profile type=string
+FLAG fizzy time ls --quiet type=bool
+FLAG fizzy time ls --styled type=bool
+FLAG fizzy time ls --token type=string
+FLAG fizzy time ls --verbose type=bool
+FLAG fizzy time remove --agent type=bool
+FLAG fizzy time remove --api-url type=string
+FLAG fizzy time remove --card type=string
+FLAG fizzy time remove --count type=bool
+FLAG fizzy time remove --date type=string
+FLAG fizzy time remove --description type=string
+FLAG fizzy time remove --duration type=string
+FLAG fizzy time remove --help type=bool
+FLAG fizzy time remove --ids-only type=bool
+FLAG fizzy time remove --jq type=string
+FLAG fizzy time remove --json type=bool
+FLAG fizzy time remove --limit type=int
+FLAG fizzy time remove --markdown type=bool
+FLAG fizzy time remove --profile type=string
+FLAG fizzy time remove --quiet type=bool
+FLAG fizzy time remove --styled type=bool
+FLAG fizzy time remove --token type=string
+FLAG fizzy time remove --verbose type=bool
+FLAG fizzy time rm --agent type=bool
+FLAG fizzy time rm --api-url type=string
+FLAG fizzy time rm --card type=string
+FLAG fizzy time rm --count type=bool
+FLAG fizzy time rm --help type=bool
+FLAG fizzy time rm --ids-only type=bool
+FLAG fizzy time rm --jq type=string
+FLAG fizzy time rm --json type=bool
+FLAG fizzy time rm --limit type=int
+FLAG fizzy time rm --markdown type=bool
+FLAG fizzy time rm --profile type=string
+FLAG fizzy time rm --quiet type=bool
+FLAG fizzy time rm --styled type=bool
+FLAG fizzy time rm --token type=string
+FLAG fizzy time rm --verbose type=bool
+FLAG fizzy time show --agent type=bool
+FLAG fizzy time show --api-url type=string
+FLAG fizzy time show --card type=string
+FLAG fizzy time show --count type=bool
+FLAG fizzy time show --help type=bool
+FLAG fizzy time show --ids-only type=bool
+FLAG fizzy time show --jq type=string
+FLAG fizzy time show --json type=bool
+FLAG fizzy time show --limit type=int
+FLAG fizzy time show --markdown type=bool
+FLAG fizzy time show --profile type=string
+FLAG fizzy time show --quiet type=bool
+FLAG fizzy time show --styled type=bool
+FLAG fizzy time show --token type=string
+FLAG fizzy time show --verbose type=bool
+FLAG fizzy time update --agent type=bool
+FLAG fizzy time update --api-url type=string
+FLAG fizzy time update --card type=string
+FLAG fizzy time update --count type=bool
+FLAG fizzy time update --date type=string
+FLAG fizzy time update --description type=string
+FLAG fizzy time update --duration type=string
+FLAG fizzy time update --help type=bool
+FLAG fizzy time update --ids-only type=bool
+FLAG fizzy time update --jq type=string
+FLAG fizzy time update --json type=bool
+FLAG fizzy time update --limit type=int
+FLAG fizzy time update --markdown type=bool
+FLAG fizzy time update --profile type=string
+FLAG fizzy time update --quiet type=bool
+FLAG fizzy time update --styled type=bool
+FLAG fizzy time update --token type=string
+FLAG fizzy time update --verbose type=bool
+FLAG fizzy time view --agent type=bool
+FLAG fizzy time view --api-url type=string
+FLAG fizzy time view --card type=string
+FLAG fizzy time view --count type=bool
+FLAG fizzy time view --help type=bool
+FLAG fizzy time view --ids-only type=bool
+FLAG fizzy time view --jq type=string
+FLAG fizzy time view --json type=bool
+FLAG fizzy time view --limit type=int
+FLAG fizzy time view --markdown type=bool
+FLAG fizzy time view --profile type=string
+FLAG fizzy time view --quiet type=bool
+FLAG fizzy time view --styled type=bool
+FLAG fizzy time view --token type=string
+FLAG fizzy time view --verbose type=bool
 FLAG fizzy upload --agent type=bool
 FLAG fizzy upload --api-url type=string
 FLAG fizzy upload --count type=bool
@@ -3215,6 +3403,17 @@ SUB fizzy tag
 SUB fizzy tag help
 SUB fizzy tag list
 SUB fizzy tag ls
+SUB fizzy time
+SUB fizzy time add
+SUB fizzy time delete
+SUB fizzy time help
+SUB fizzy time list
+SUB fizzy time ls
+SUB fizzy time remove
+SUB fizzy time rm
+SUB fizzy time show
+SUB fizzy time update
+SUB fizzy time view
 SUB fizzy upload
 SUB fizzy upload file
 SUB fizzy upload help
