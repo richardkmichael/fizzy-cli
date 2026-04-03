@@ -39,9 +39,6 @@ func runRootDefault(cmd *cobra.Command, args []string) error {
 		auth.Profile = cfgProfile
 	}
 	if cfg != nil {
-		if auth.Profile == "" {
-			auth.Profile = cfgProfile
-		}
 		if cfg.Account != "" {
 			auth.Account = cfg.Account
 		}
