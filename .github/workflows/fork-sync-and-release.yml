@@ -83,6 +83,7 @@ jobs:
     needs: check-upstream
     if: needs.check-upstream.outputs.should_sync == 'true'
     runs-on: ubuntu-latest
+    environment: Sync
     permissions:
       contents: write
     steps:
