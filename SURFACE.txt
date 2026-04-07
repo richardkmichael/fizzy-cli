@@ -11,6 +11,7 @@ ARG fizzy comment attachments download 00 [ATTACHMENT_INDEX]
 ARG fizzy comment attachments help 00 [command]
 ARG fizzy comment help 00 [command]
 ARG fizzy completion 00 [bash|zsh|fish|powershell]
+ARG fizzy config help 00 [command]
 ARG fizzy help 00 [command]
 ARG fizzy identity help 00 [command]
 ARG fizzy migrate help 00 [command]
@@ -126,6 +127,12 @@ CMD fizzy comment show
 CMD fizzy comment update
 CMD fizzy comment view
 CMD fizzy completion
+CMD fizzy config
+CMD fizzy config explain
+CMD fizzy config help
+CMD fizzy config show
+CMD fizzy config view
+CMD fizzy doctor
 CMD fizzy help
 CMD fizzy identity
 CMD fizzy identity help
@@ -1728,6 +1735,91 @@ FLAG fizzy completion --quiet type=bool
 FLAG fizzy completion --styled type=bool
 FLAG fizzy completion --token type=string
 FLAG fizzy completion --verbose type=bool
+FLAG fizzy config --agent type=bool
+FLAG fizzy config --api-url type=string
+FLAG fizzy config --count type=bool
+FLAG fizzy config --help type=bool
+FLAG fizzy config --ids-only type=bool
+FLAG fizzy config --jq type=string
+FLAG fizzy config --json type=bool
+FLAG fizzy config --limit type=int
+FLAG fizzy config --markdown type=bool
+FLAG fizzy config --profile type=string
+FLAG fizzy config --quiet type=bool
+FLAG fizzy config --styled type=bool
+FLAG fizzy config --token type=string
+FLAG fizzy config --verbose type=bool
+FLAG fizzy config explain --agent type=bool
+FLAG fizzy config explain --api-url type=string
+FLAG fizzy config explain --count type=bool
+FLAG fizzy config explain --help type=bool
+FLAG fizzy config explain --ids-only type=bool
+FLAG fizzy config explain --jq type=string
+FLAG fizzy config explain --json type=bool
+FLAG fizzy config explain --limit type=int
+FLAG fizzy config explain --markdown type=bool
+FLAG fizzy config explain --profile type=string
+FLAG fizzy config explain --quiet type=bool
+FLAG fizzy config explain --styled type=bool
+FLAG fizzy config explain --token type=string
+FLAG fizzy config explain --verbose type=bool
+FLAG fizzy config help --agent type=bool
+FLAG fizzy config help --api-url type=string
+FLAG fizzy config help --count type=bool
+FLAG fizzy config help --help type=bool
+FLAG fizzy config help --ids-only type=bool
+FLAG fizzy config help --jq type=string
+FLAG fizzy config help --json type=bool
+FLAG fizzy config help --limit type=int
+FLAG fizzy config help --markdown type=bool
+FLAG fizzy config help --profile type=string
+FLAG fizzy config help --quiet type=bool
+FLAG fizzy config help --styled type=bool
+FLAG fizzy config help --token type=string
+FLAG fizzy config help --verbose type=bool
+FLAG fizzy config show --agent type=bool
+FLAG fizzy config show --api-url type=string
+FLAG fizzy config show --count type=bool
+FLAG fizzy config show --help type=bool
+FLAG fizzy config show --ids-only type=bool
+FLAG fizzy config show --jq type=string
+FLAG fizzy config show --json type=bool
+FLAG fizzy config show --limit type=int
+FLAG fizzy config show --markdown type=bool
+FLAG fizzy config show --profile type=string
+FLAG fizzy config show --quiet type=bool
+FLAG fizzy config show --styled type=bool
+FLAG fizzy config show --token type=string
+FLAG fizzy config show --verbose type=bool
+FLAG fizzy config view --agent type=bool
+FLAG fizzy config view --api-url type=string
+FLAG fizzy config view --count type=bool
+FLAG fizzy config view --help type=bool
+FLAG fizzy config view --ids-only type=bool
+FLAG fizzy config view --jq type=string
+FLAG fizzy config view --json type=bool
+FLAG fizzy config view --limit type=int
+FLAG fizzy config view --markdown type=bool
+FLAG fizzy config view --profile type=string
+FLAG fizzy config view --quiet type=bool
+FLAG fizzy config view --styled type=bool
+FLAG fizzy config view --token type=string
+FLAG fizzy config view --verbose type=bool
+FLAG fizzy doctor --agent type=bool
+FLAG fizzy doctor --all-profiles type=bool
+FLAG fizzy doctor --api-url type=string
+FLAG fizzy doctor --count type=bool
+FLAG fizzy doctor --help type=bool
+FLAG fizzy doctor --ids-only type=bool
+FLAG fizzy doctor --jq type=string
+FLAG fizzy doctor --json type=bool
+FLAG fizzy doctor --limit type=int
+FLAG fizzy doctor --markdown type=bool
+FLAG fizzy doctor --profile type=string
+FLAG fizzy doctor --quiet type=bool
+FLAG fizzy doctor --styled type=bool
+FLAG fizzy doctor --token type=string
+FLAG fizzy doctor --verbose type=bool
 FLAG fizzy help --agent type=bool
 FLAG fizzy help --api-url type=string
 FLAG fizzy help --count type=bool
@@ -3058,6 +3150,12 @@ SUB fizzy comment show
 SUB fizzy comment update
 SUB fizzy comment view
 SUB fizzy completion
+SUB fizzy config
+SUB fizzy config explain
+SUB fizzy config help
+SUB fizzy config show
+SUB fizzy config view
+SUB fizzy doctor
 SUB fizzy help
 SUB fizzy identity
 SUB fizzy identity help

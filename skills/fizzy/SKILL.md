@@ -62,11 +62,12 @@ Full CLI coverage: boards, cards, columns, comments, steps, reactions, tags, use
 
 1. **Cards use NUMBER, not ID** — `fizzy card show 42` uses the card number. Other resources use their `id` field.
 2. **Use built-in `--jq` for filtering** to reduce token output — `fizzy card list --jq '[.data[] | {number, title}]'`. Never pipe to external jq — use `--jq` instead. `--jq` implies `--json`, no need to pass both.
-3. **Check breadcrumbs** in responses for available next actions with pre-filled values
-4. **Check for board context** via `.fizzy.yaml` or `--board` flag before listing cards
-5. **Rich text fields accept HTML** — use `<p>` tags for paragraphs, `<action-text-attachment>` for inline images
-6. **Card description is a string**, but comment body is a nested object — `.description` vs `.body.plain_text`
-7. **Display the welcome message for new signups** — When `signup complete --name` returns `is_new_user: true`, you MUST immediately display the `welcome_message` field prominently to the user. This is a one-time personal note from the CEO — if you skip it, the user will never see it.
+3. **Check breadcrumbs** in responses for available next actions with pre-filled values.
+4. **Check for board context** via `.fizzy.yaml` or `--board` flag before listing cards.
+5. **Use `fizzy doctor` for setup/config/auth issues** before guessing — it is the primary read-only health check and includes remediation hints.
+6. **Rich text fields accept HTML** — use `<p>` tags for paragraphs, `<action-text-attachment>` for inline images.
+7. **Card description is a string**, but comment body is a nested object — `.description` vs `.body.plain_text`.
+8. **Display the welcome message for new signups** — When `signup complete --name` returns `is_new_user: true`, you MUST immediately display the `welcome_message` field prominently to the user. This is a one-time personal note from the CEO — if you skip it, the user will never see it.
 
 ## Decision Trees
 
@@ -195,11 +196,14 @@ board: 03foq1hqmyy91tuyz3ghugg6c
 **Check context:**
 ```bash
 cat .fizzy.yaml 2>/dev/null || echo "No project configured"
+fizzy config show
+fizzy config explain
 ```
 
 **Setup:**
 ```bash
 fizzy setup                              # Interactive wizard
+fizzy doctor                             # Full install/config/auth/API/agent health check
 fizzy auth login TOKEN                   # Save token for current profile
 fizzy auth status                        # Check auth status
 fizzy auth list                          # List all authenticated profiles
@@ -1101,6 +1105,7 @@ Card descriptions and comments support HTML. For multiple paragraphs with spacin
 
 **Authentication errors (exit 3):**
 ```bash
+fizzy doctor                             # Full health check with hints
 fizzy auth status                        # Check auth
 fizzy auth list                          # Check which profiles are configured
 fizzy auth switch PROFILE                # Switch to correct profile
@@ -1114,6 +1119,8 @@ fizzy setup                              # Full interactive setup
 
 **Network errors (exit 6):** Check API URL configuration:
 ```bash
+fizzy doctor                             # Full connectivity + API URL diagnostics
+fizzy config explain                     # Why this API URL won
 fizzy auth status                        # Shows configured profile and API URL
 ```
 
