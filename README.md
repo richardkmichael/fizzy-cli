@@ -29,7 +29,16 @@ curl -fsSL https://raw.githubusercontent.com/basecamp/fizzy-cli/master/scripts/i
 fizzy setup
 ```
 
-That's it. The installer detects your platform and architecture, downloads the right binary, and verifies checksums. The setup wizard then walks you through configuring your token, selecting your account, and optionally setting a default board. Try `fizzy board list` to verify everything is working.
+That's it. The installer detects your platform and architecture, downloads the right binary, and verifies checksums. The setup wizard then walks you through configuring your token, selecting your account, and optionally setting a default board.
+
+Recommended first checks:
+
+```bash
+fizzy doctor
+fizzy board list
+```
+
+Use `fizzy doctor` any time you want a full health check of your install, config, auth, API connectivity, board context, and agent setup.
 
 <details>
 <summary>Other installation methods</summary>
@@ -121,6 +130,8 @@ Breadcrumbs suggest next commands, making it easy for humans and agents to navig
 
 **Agent discovery:** Every command supports `--help --agent` for structured help output. Use `fizzy commands --json` for the full command catalog.
 
+**Troubleshooting:** Run `fizzy doctor` for a read-only health check with remediation hints and next steps.
+
 ## Configuration
 
 ```
@@ -140,6 +151,37 @@ Configuration priority (highest to lowest):
 5. Global config (`~/.config/fizzy/config.yaml` or `~/.fizzy/config.yaml`)
 
 `FIZZY_ACCOUNT` is accepted as a deprecated alias for `FIZZY_PROFILE`.
+
+Inspect the effective config and precedence:
+
+```bash
+fizzy config show
+fizzy config explain
+fizzy config explain --profile acme
+```
+
+## Troubleshooting
+
+```bash
+fizzy doctor                 # Full install/config/auth/API/agent health check
+fizzy doctor --profile acme  # Check one saved profile explicitly
+fizzy doctor --all-profiles  # Sweep every saved profile
+fizzy doctor --verbose       # Include effective config details and timings
+fizzy doctor --json          # Structured output for scripts and support
+```
+
+Common follow-up commands:
+
+```bash
+fizzy auth status
+fizzy config show
+fizzy config explain
+fizzy identity show
+fizzy board list
+fizzy setup
+fizzy setup claude
+fizzy skill install
+```
 
 ## Development
 

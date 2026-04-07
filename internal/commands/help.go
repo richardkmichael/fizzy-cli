@@ -192,6 +192,7 @@ func renderCommandHelp(cmd *cobra.Command, w io.Writer) {
 func setRootHelpMetadata(cmd *cobra.Command) {
 	cmd.Example = strings.Join([]string{
 		"$ fizzy auth status",
+		"$ fizzy doctor",
 		"$ fizzy board list",
 		"$ fizzy card show 42",
 		"$ fizzy search \"billing bug\"",
@@ -381,7 +382,7 @@ var rootCommandGroups = map[string][]string{
 	"core":            {"auth", "board", "card", "search"},
 	"collaboration":   {"comment", "notification"},
 	"getting-started": {"setup", "signup"},
-	"discover":        {"commands", "version"},
+	"discover":        {"doctor", "config", "commands", "version"},
 }
 
 var commandExamples = map[string]string{
@@ -398,6 +399,10 @@ var commandExamples = map[string]string{
 	"fizzy comment list":      "$ fizzy comment list --card <number>",
 	"fizzy comment create":    "$ fizzy comment create --card <number> --body \"Looks good\"",
 	"fizzy commands":          "$ fizzy commands\n$ fizzy commands --json",
+	"fizzy config":            "$ fizzy config show\n$ fizzy config explain",
+	"fizzy config show":       "$ fizzy config show\n$ fizzy config show --verbose",
+	"fizzy config explain":    "$ fizzy config explain\n$ fizzy config explain --profile acme",
+	"fizzy doctor":            "$ fizzy doctor\n$ fizzy doctor --profile acme\n$ fizzy doctor --all-profiles",
 	"fizzy search":            "$ fizzy search \"billing bug\"\n$ fizzy search \"billing bug\" --board <id>",
 	"fizzy notification":      "$ fizzy notification tray\n$ fizzy notification list",
 	"fizzy notification tray": "$ fizzy notification tray",
@@ -411,9 +416,11 @@ var commandExamples = map[string]string{
 var relatedCommands = map[string][]helpLink{
 	"fizzy auth": {
 		{Command: "fizzy identity show", Description: "View your identity and accessible accounts"},
+		{Command: "fizzy doctor", Description: "Run a full health check after logging in"},
 		{Command: "fizzy board list", Description: "List boards after logging in"},
 	},
 	"fizzy auth status": {
+		{Command: "fizzy doctor", Description: "Run a full CLI health check"},
 		{Command: "fizzy identity show", Description: "View your identity"},
 		{Command: "fizzy auth list", Description: "List saved profiles"},
 	},
@@ -432,5 +439,25 @@ var relatedCommands = map[string][]helpLink{
 	"fizzy search": {
 		{Command: "fizzy card list --board <id>", Description: "Browse cards on a board"},
 		{Command: "fizzy card show <number>", Description: "Show a matching card"},
+	},
+	"fizzy config": {
+		{Command: "fizzy config show", Description: "Show the effective configuration"},
+		{Command: "fizzy config explain", Description: "Explain config precedence"},
+		{Command: "fizzy auth list", Description: "List saved profiles"},
+	},
+	"fizzy config show": {
+		{Command: "fizzy config explain", Description: "Explain why these values won"},
+		{Command: "fizzy doctor", Description: "Run a full health check"},
+	},
+	"fizzy config explain": {
+		{Command: "fizzy config show", Description: "Show only the effective values"},
+		{Command: "fizzy auth list", Description: "List saved profiles"},
+		{Command: "fizzy doctor", Description: "Run a full health check"},
+	},
+	"fizzy doctor": {
+		{Command: "fizzy auth status", Description: "Check current authentication state"},
+		{Command: "fizzy config explain", Description: "Explain config precedence"},
+		{Command: "fizzy identity show", Description: "Verify identity and accessible accounts"},
+		{Command: "fizzy setup", Description: "Repair or re-run interactive setup"},
 	},
 }

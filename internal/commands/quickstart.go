@@ -57,8 +57,8 @@ func runRootDefault(cmd *cobra.Command, args []string) error {
 		Auth:    auth,
 		Context: context,
 		Commands: quickStartCommandsInfo{
-			QuickStart: []string{"fizzy board list", "fizzy card list", `fizzy search "query"`},
-			Common:     []string{"fizzy auth status", "fizzy board list", "fizzy card show 42"},
+			QuickStart: []string{"fizzy doctor", "fizzy config show", "fizzy board list", "fizzy card list", `fizzy search "query"`},
+			Common:     []string{"fizzy auth status", "fizzy config explain", "fizzy doctor", "fizzy board list", "fizzy card show 42"},
 		},
 	}
 
@@ -74,6 +74,8 @@ func runRootDefault(cmd *cobra.Command, args []string) error {
 	}
 
 	breadcrumbs := []Breadcrumb{
+		breadcrumb("doctor", "fizzy doctor", "Check CLI health"),
+		breadcrumb("config", "fizzy config show", "Show the effective config"),
 		breadcrumb("list_boards", "fizzy board list", "List boards"),
 		breadcrumb("list_cards", "fizzy card list", "List cards"),
 		breadcrumb("search_cards", `fizzy search "query"`, "Search cards"),
