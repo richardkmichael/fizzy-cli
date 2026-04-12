@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -347,7 +348,7 @@ func TestFetchChecksumFindsTargetLine(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := fetchChecksum(server.URL, "fizzy-darwin-arm64")
+	got, err := fetchChecksum(context.Background(), server.URL, "fizzy-darwin-arm64")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -355,7 +356,7 @@ func TestFetchChecksumFindsTargetLine(t *testing.T) {
 		t.Errorf("got %q, want %q", got, "bbbb")
 	}
 
-	if _, err := fetchChecksum(server.URL, "fizzy-freebsd-arm64"); err == nil {
+	if _, err := fetchChecksum(context.Background(), server.URL, "fizzy-freebsd-arm64"); err == nil {
 		t.Errorf("expected error for missing asset, got nil")
 	}
 }

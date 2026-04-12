@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -69,7 +70,12 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 			fmt.Sprintf("self-update is not supported on %s/%s", runtime.GOOS, runtime.GOARCH))
 	}
 
-	latest, err := fetchLatestRelease()
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	latest, err := fetchLatestRelease(ctx)
 	if err != nil {
 		return err
 	}
@@ -115,18 +121,18 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	expected, err := fetchChecksum(sumsURL, asset)
+	expected, err := fetchChecksum(ctx, sumsURL, asset)
 	if err != nil {
 		return err
 	}
 
-	tmp, err := downloadVerified(assetURL, expected, exe)
+	tmp, err := downloadVerified(ctx, assetURL, expected, exe)
 	if err != nil {
 		return err
 	}
 
 	if err := swapBinary(exe, tmp); err != nil {
-		_ = os.Remove(tmp)
+		_ = os.Remove(tmp) //nolint:gosec // G703: tmp came from os.CreateTemp inside the target directory
 		return err
 	}
 
@@ -158,11 +164,11 @@ type release struct {
 	Assets map[string]string // asset name -> browser_download_url
 }
 
-func fetchLatestRelease() (*release, error) {
+func fetchLatestRelease(ctx context.Context) (*release, error) {
 	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest",
 		ghAPIBase, selfUpdateRepoOwner, selfUpdateRepoName)
 
-	body, err := httpGetBody(url, "application/vnd.github+json")
+	body, err := httpGetBody(ctx, url, "application/vnd.github+json")
 	if err != nil {
 		return nil, err
 	}
@@ -192,8 +198,8 @@ func fetchLatestRelease() (*release, error) {
 
 // fetchChecksum downloads the checksums.txt and returns the hex SHA256 for
 // asset. Format is the standard shasum output: "<hex>  <filename>".
-func fetchChecksum(url, asset string) (string, error) {
-	body, err := httpGetBody(url, "")
+func fetchChecksum(ctx context.Context, url, asset string) (string, error) {
+	body, err := httpGetBody(ctx, url, "")
 	if err != nil {
 		return "", err
 	}
@@ -212,8 +218,8 @@ func fetchChecksum(url, asset string) (string, error) {
 	}
 }
 
-func httpGetBody(url, accept string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func httpGetBody(ctx context.Context, url, accept string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -243,9 +249,9 @@ func httpGetBody(url, accept string) ([]byte, error) {
 // downloadVerified downloads url into a temp file in the same directory as
 // dest (so the final rename is atomic on one filesystem), verifies SHA256
 // against expected, chmods it executable, and returns the temp path. On any
-// failure, the temp file is removed.
-func downloadVerified(url, expected, dest string) (string, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+// failure, the temp file is removed by the deferred cleanup.
+func downloadVerified(ctx context.Context, url, expected, dest string) (_ string, retErr error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
@@ -276,34 +282,36 @@ func downloadVerified(url, expected, dest string) (string, error) {
 			Hint:    "self-update needs write access to the directory containing the fizzy binary",
 		}
 	}
+	tmpPath := tmp.Name()
+	defer func() {
+		if retErr != nil {
+			_ = os.Remove(tmpPath) //nolint:gosec // G703: tmpPath came from os.CreateTemp inside dir
+		}
+	}()
 
 	h := sha256.New()
 	if _, err := io.Copy(io.MultiWriter(tmp, h), resp.Body); err != nil {
 		_ = tmp.Close()
-		_ = os.Remove(tmp.Name())
 		return "", &output.Error{
 			Code:    output.CodeNetwork,
 			Message: fmt.Sprintf("writing binary: %v", err),
 		}
 	}
 	if err := tmp.Close(); err != nil {
-		_ = os.Remove(tmp.Name())
 		return "", err
 	}
 
 	got := hex.EncodeToString(h.Sum(nil))
 	if got != expected {
-		_ = os.Remove(tmp.Name())
 		return "", &output.Error{
 			Code:    output.CodeAPI,
 			Message: fmt.Sprintf("checksum mismatch: expected %s, got %s", expected, got),
 		}
 	}
-	if err := os.Chmod(tmp.Name(), 0o755); err != nil {
-		_ = os.Remove(tmp.Name())
+	if err := os.Chmod(tmpPath, 0o755); err != nil { //nolint:gosec // G302: 0o755 is required — we're installing an executable
 		return "", err
 	}
-	return tmp.Name(), nil
+	return tmpPath, nil
 }
 
 // swapBinary atomically replaces current with newPath. On Linux and macOS
