@@ -164,6 +164,7 @@ CMD fizzy reaction list
 CMD fizzy reaction ls
 CMD fizzy reaction rm
 CMD fizzy search
+CMD fizzy self-update
 CMD fizzy setup
 CMD fizzy setup claude
 CMD fizzy setup help
@@ -2286,6 +2287,22 @@ FLAG fizzy search --styled type=bool
 FLAG fizzy search --tag type=string
 FLAG fizzy search --token type=string
 FLAG fizzy search --verbose type=bool
+FLAG fizzy self-update --agent type=bool
+FLAG fizzy self-update --api-url type=string
+FLAG fizzy self-update --check type=bool
+FLAG fizzy self-update --count type=bool
+FLAG fizzy self-update --force type=bool
+FLAG fizzy self-update --help type=bool
+FLAG fizzy self-update --ids-only type=bool
+FLAG fizzy self-update --jq type=string
+FLAG fizzy self-update --json type=bool
+FLAG fizzy self-update --limit type=int
+FLAG fizzy self-update --markdown type=bool
+FLAG fizzy self-update --profile type=string
+FLAG fizzy self-update --quiet type=bool
+FLAG fizzy self-update --styled type=bool
+FLAG fizzy self-update --token type=string
+FLAG fizzy self-update --verbose type=bool
 FLAG fizzy setup --agent type=bool
 FLAG fizzy setup --api-url type=string
 FLAG fizzy setup --count type=bool
@@ -3378,6 +3395,7 @@ SUB fizzy reaction list
 SUB fizzy reaction ls
 SUB fizzy reaction rm
 SUB fizzy search
+SUB fizzy self-update
 SUB fizzy setup
 SUB fizzy setup claude
 SUB fizzy setup help
