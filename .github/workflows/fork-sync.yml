@@ -1,8 +1,12 @@
-name: Fork sync and release
+name: Fork sync
 
+# Rebases time-tracking onto upstream master. The sync job's force-push to
+# time-tracking — when authored with SYNC_TOKEN (a PAT) rather than the
+# default GITHUB_TOKEN — triggers fork-release.yml, which does the actual
+# tagging and goreleaser run.
+#
 # Temporarily tracks upstream master until next upstream release (post-v3.0.3),
 # at which point this should switch to tracking release tags.
-# See: upstream module rename from robzolkos/fizzy-cli to basecamp/fizzy-cli.
 
 on:
   schedule:
@@ -94,11 +98,16 @@ jobs:
           GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: gh repo sync ${{ github.repository }} --branch master
 
+      # Use SYNC_TOKEN (PAT) as the checkout's git credential so the later
+      # force-push to time-tracking is attributed to the PAT's user —
+      # pushes authored by GITHUB_TOKEN do not trigger downstream workflows
+      # (GitHub prevents workflow cascade loops).
       - name: Checkout fork
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked] -- credentials needed for git push
         with:
           ref: time-tracking
           fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
 
       - name: Configure git
         run: |
@@ -125,7 +134,7 @@ jobs:
           git rebase upstream/master
 
       # Force-push is required because rebase rewrites commit SHAs.
-      # The push triggers the CI workflow (test.yml) on time-tracking.
+      # This push (via SYNC_TOKEN) triggers fork-release.yml.
       - name: Push rebased time-tracking
         run: git push origin time-tracking --force-with-lease
 
@@ -140,76 +149,12 @@ jobs:
             echo "- Upstream master: \`$UPSTREAM_SHA\`"
             echo "- time-tracking HEAD: \`$HEAD_SHA\`"
             echo "- Version string: \`$VERSION\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  release-fork:
-    name: Build and release
-    needs: [check-upstream, sync-fork]
-    if: needs.check-upstream.outputs.should_sync == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout rebased time-tracking
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked] -- credentials needed for git push (tag)
-        with:
-          ref: time-tracking
-          fetch-depth: 0
-
-      - name: Fetch upstream tags
-        run: |
-          git remote add upstream https://github.com/basecamp/fizzy-cli.git
-          git fetch upstream --tags
-          git fetch upstream master
-
-      - name: Tag release
-        id: tag
-        run: |
-          # Build a semver-compatible version:
-          #   v3.0.3-tt.3.gabcdef (based on v3.0.3, 3 time-tracking commits, at SHA)
-          UPSTREAM_TAG=$(git describe --tags --match 'v*' --abbrev=0 upstream/master)
-          COMMIT_COUNT=$(git rev-list upstream-master..HEAD --count)
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          VERSION="${UPSTREAM_TAG}-tt.${COMMIT_COUNT}.g${SHORT_SHA}"
-
-          if git rev-parse "$VERSION" >/dev/null 2>&1; then
-            echo "Tag $VERSION already exists, skipping release"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            git tag "$VERSION"
-            git push origin "$VERSION"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Go
-        if: steps.tag.outputs.skip != 'true'
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0 # zizmor: ignore[cache-poisoning] -- personal fork, not a public distribution
-        with:
-          go-version-file: go.mod
-
-      - name: Run GoReleaser
-        if: steps.tag.outputs.skip != 'true'
-        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
-        with:
-          version: 'v2.14.1'
-          args: release --clean --config .goreleaser.fork.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Summary
-        env:
-          VERSION: ${{ steps.tag.outputs.version }}
-        run: |
-          REPO="${{ github.repository }}"
-          {
-            echo "### Release"
-            echo "- Version: [\`$VERSION\`](https://github.com/$REPO/releases/tag/$VERSION)"
+            echo "- Release will be cut by fork-release.yml (triggered by the push above)."
           } >> "$GITHUB_STEP_SUMMARY"
 
   record:
     name: Record synced version
-    needs: [check-upstream, release-fork]
+    needs: [check-upstream, sync-fork]
     if: needs.check-upstream.outputs.should_sync == 'true'
     runs-on: ubuntu-latest
     permissions:
