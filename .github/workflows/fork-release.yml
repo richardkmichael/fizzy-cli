@@ -1,0 +1,102 @@
+name: Fork release
+
+# Cuts a release from the current HEAD of time-tracking. Fires on:
+#   - any push to time-tracking (manual commits, and the sync workflow's
+#     force-push once it's re-authored with SYNC_TOKEN);
+#   - manual workflow_dispatch.
+#
+# paths-ignore filters out docs-only pushes (every path in the diff must
+# match for the workflow to be skipped). The release job also honors a
+# [skip release] marker in the head commit message — useful when a code
+# change genuinely doesn't warrant a release.
+
+on:
+  push:
+    branches: [time-tracking]
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: fork-release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  release-fork:
+    name: Build and release
+    # Head-commit message check only applies to push events; on
+    # workflow_dispatch github.event.head_commit is null and contains()
+    # returns false, so the negation is true and the job runs.
+    if: "!contains(github.event.head_commit.message, '[skip release]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout time-tracking
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked] -- credentials needed for tag push
+        with:
+          ref: time-tracking
+          fetch-depth: 0
+
+      # Fetch upstream tags so `git describe` can resolve v-tags that aren't
+      # pushed to origin. We don't fetch upstream/master — the release version
+      # is pinned to whatever the last sync put at upstream-master, not
+      # wherever upstream has advanced to since.
+      - name: Fetch upstream tags
+        run: |
+          git remote add upstream https://github.com/basecamp/fizzy-cli.git
+          git fetch upstream --tags
+
+      - name: Tag release
+        id: tag
+        run: |
+          # Version from the last-synced upstream state (origin's
+          # upstream-master tag), not from upstream/master which may have
+          # moved since the last sync:
+          #   v3.0.3-tt.3.gabcdef  (upstream at v3.0.3, 3 time-tracking commits, at SHA)
+          UPSTREAM_TAG=$(git describe --tags --match 'v*' --abbrev=0 upstream-master)
+          COMMIT_COUNT=$(git rev-list upstream-master..HEAD --count)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="${UPSTREAM_TAG}-tt.${COMMIT_COUNT}.g${SHORT_SHA}"
+
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping release"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            git tag "$VERSION"
+            git push origin "$VERSION"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        if: steps.tag.outputs.skip != 'true'
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0 # zizmor: ignore[cache-poisoning] -- personal fork, not a public distribution
+        with:
+          go-version-file: go.mod
+
+      - name: Run GoReleaser
+        if: steps.tag.outputs.skip != 'true'
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        with:
+          version: 'v2.14.1'
+          args: release --clean --config .goreleaser.fork.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+          SKIP: ${{ steps.tag.outputs.skip }}
+        run: |
+          REPO="${{ github.repository }}"
+          {
+            echo "### Release"
+            if [ "$SKIP" = "true" ]; then
+              echo "- Skipped: tag \`$VERSION\` already exists."
+            else
+              echo "- Version: [\`$VERSION\`](https://github.com/$REPO/releases/tag/$VERSION)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
