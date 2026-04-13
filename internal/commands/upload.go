@@ -16,7 +16,7 @@ var uploadCmd = &cobra.Command{
 var uploadFileCmd = &cobra.Command{
 	Use:   "file PATH",
 	Short: "Upload a file",
-	Long:  "Uploads a file and returns both signed_id (for --image) and attachable_sgid (for inline rich text attachments when embedding manually).",
+	Long:  "Uploads a file and returns signed_id (for --image) and, when available/supported by the server, attachable_sgid (for inline rich text attachments when embedding manually).",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Upload uses legacy client only — skip SDK initialization
