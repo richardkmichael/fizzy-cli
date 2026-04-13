@@ -67,7 +67,7 @@ func (f *SharedFixture) Teardown() error {
 		errs = append(errs, fmt.Sprintf("remove fixture config home %s: %v", f.configHome, err))
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf(strings.Join(errs, "\n"))
+		return fmt.Errorf("%s", strings.Join(errs, "\n"))
 	}
 	return nil
 }
