@@ -630,6 +630,43 @@ func TestCardUpdate(t *testing.T) {
 			t.Errorf("expected description %q, got %v", expected, body["description"])
 		}
 	})
+
+	t.Run("preserves existing description when only attach is provided", func(t *testing.T) {
+		tempDir := t.TempDir()
+		attachPath := writeTestAttachmentFile(t, tempDir, "update.txt", "update")
+
+		mock := NewMockClient()
+		mock.GetResponse = &client.APIResponse{
+			StatusCode: 200,
+			Data: map[string]any{
+				"id":               "abc",
+				"description_html": "<p>Existing description</p>",
+			},
+		}
+		mock.PatchResponse = &client.APIResponse{StatusCode: 200, Data: map[string]any{"id": "abc"}}
+		mock.UploadFileResponse = &client.APIResponse{StatusCode: 200, Data: map[string]any{"attachable_sgid": "sgid-update"}}
+
+		SetTestModeWithSDK(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer resetTest()
+
+		cardUpdateAttach = []string{attachPath}
+		err := cardUpdateCmd.RunE(cardUpdateCmd, []string{"42"})
+		cardUpdateAttach = nil
+
+		assertExitCode(t, err, 0)
+		if len(mock.GetCalls) == 0 || mock.GetCalls[0].Path != "/cards/42" {
+			t.Fatalf("expected existing card fetch before update, got %#v", mock.GetCalls)
+		}
+		body := mock.PatchCalls[0].Body.(map[string]any)
+		expected := strings.Join([]string{
+			"<p>Existing description</p>",
+			`<action-text-attachment sgid="sgid-update"></action-text-attachment>`,
+		}, "\n")
+		if body["description"] != expected {
+			t.Errorf("expected description %q, got %v", expected, body["description"])
+		}
+	})
 }
 
 func TestCardDelete(t *testing.T) {

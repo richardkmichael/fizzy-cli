@@ -375,9 +375,21 @@ var cardUpdateCmd = &cobra.Command{
 
 		cardNumber := args[0]
 
+		hasDescriptionInput := cardUpdateDescription != "" || cardUpdateDescriptionFile != ""
 		description, err := resolveRichTextContent(cardUpdateDescription, cardUpdateDescriptionFile)
 		if err != nil {
 			return err
+		}
+		if len(cardUpdateAttach) > 0 && !hasDescriptionInput {
+			currentData, _, err := getSDK().Cards().Get(cmd.Context(), cardNumber)
+			if err != nil {
+				return convertSDKError(err)
+			}
+			if current, ok := normalizeAny(currentData).(map[string]any); ok {
+				if currentDescription, ok := current["description_html"].(string); ok {
+					description = currentDescription
+				}
+			}
 		}
 		description, err = appendInlineAttachmentsToContent(description, cardUpdateAttach)
 		if err != nil {

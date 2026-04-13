@@ -374,6 +374,48 @@ func TestCommentUpdate(t *testing.T) {
 		}
 	})
 
+	t.Run("preserves existing body when only attach is provided", func(t *testing.T) {
+		tempDir := t.TempDir()
+		attachPath := writeTestAttachmentFile(t, tempDir, "update.txt", "update")
+
+		mock := NewMockClient()
+		mock.GetResponse = &client.APIResponse{
+			StatusCode: 200,
+			Data: map[string]any{
+				"id": "comment-1",
+				"body": map[string]any{
+					"html":       "<p>Existing comment</p>",
+					"plain_text": "Existing comment",
+				},
+			},
+		}
+		mock.PatchResponse = &client.APIResponse{StatusCode: 200, Data: map[string]any{"id": "comment-1"}}
+		mock.UploadFileResponse = &client.APIResponse{StatusCode: 200, Data: map[string]any{"attachable_sgid": "sgid-update"}}
+
+		SetTestModeWithSDK(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer resetTest()
+
+		commentUpdateCard = "42"
+		commentUpdateAttach = []string{attachPath}
+		err := commentUpdateCmd.RunE(commentUpdateCmd, []string{"comment-1"})
+		commentUpdateCard = ""
+		commentUpdateAttach = nil
+
+		assertExitCode(t, err, 0)
+		if len(mock.GetCalls) == 0 || mock.GetCalls[0].Path != "/cards/42/comments/comment-1" {
+			t.Fatalf("expected existing comment fetch before update, got %#v", mock.GetCalls)
+		}
+		body := mock.PatchCalls[0].Body.(map[string]any)
+		expected := strings.Join([]string{
+			"<p>Existing comment</p>",
+			`<action-text-attachment sgid="sgid-update"></action-text-attachment>`,
+		}, "\n")
+		if body["body"] != expected {
+			t.Errorf("expected body %q, got %v", expected, body["body"])
+		}
+	})
+
 	t.Run("requires card flag", func(t *testing.T) {
 		mock := NewMockClient()
 		SetTestModeWithSDK(mock)

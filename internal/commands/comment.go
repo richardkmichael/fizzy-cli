@@ -203,17 +203,31 @@ var commentUpdateCmd = &cobra.Command{
 			return newRequiredFlagError("card")
 		}
 
+		commentID := args[0]
+		cardNumber := commentUpdateCard
+
+		hasBodyInput := commentUpdateBody != "" || commentUpdateBodyFile != ""
 		body, err := resolveRichTextContent(commentUpdateBody, commentUpdateBodyFile)
 		if err != nil {
 			return err
+		}
+		if len(commentUpdateAttach) > 0 && !hasBodyInput {
+			currentData, _, err := getSDK().Comments().Get(cmd.Context(), cardNumber, commentID)
+			if err != nil {
+				return convertSDKError(err)
+			}
+			if current, ok := normalizeAny(currentData).(map[string]any); ok {
+				if currentBody, ok := current["body"].(map[string]any); ok {
+					if currentHTML, ok := currentBody["html"].(string); ok {
+						body = currentHTML
+					}
+				}
+			}
 		}
 		body, err = appendInlineAttachmentsToContent(body, commentUpdateAttach)
 		if err != nil {
 			return err
 		}
-
-		commentID := args[0]
-		cardNumber := commentUpdateCard
 
 		req := &generated.UpdateCommentRequest{}
 		if body != "" {
