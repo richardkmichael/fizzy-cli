@@ -32,3 +32,6 @@ completions/
 # Profiling
 profiles/
 default.pgo
+
+# Local test credentials
+.env.test
