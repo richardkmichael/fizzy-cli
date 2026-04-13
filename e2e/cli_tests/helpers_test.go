@@ -158,6 +158,48 @@ func asSlice(v any) []any {
 	return s
 }
 
+func listMapByID(items []any, id string) map[string]any {
+	for _, item := range items {
+		m := asMap(item)
+		if m != nil && mapValueString(m, "id") == id {
+			return m
+		}
+	}
+	return nil
+}
+
+func listMapByNumber(items []any, number int) map[string]any {
+	want := strconv.Itoa(number)
+	for _, item := range items {
+		m := asMap(item)
+		if m != nil && mapValueString(m, "number") == want {
+			return m
+		}
+	}
+	return nil
+}
+
+func listIndexByID(items []any, id string) int {
+	for i, item := range items {
+		m := asMap(item)
+		if m != nil && mapValueString(m, "id") == id {
+			return i
+		}
+	}
+	return -1
+}
+
+func bodyPlainText(m map[string]any) string {
+	if m == nil {
+		return ""
+	}
+	body := asMap(m["body"])
+	if body == nil {
+		return ""
+	}
+	return mapValueString(body, "plain_text")
+}
+
 func currentUserID(t *testing.T, h *harness.Harness) string {
 	t.Helper()
 	identity := h.Run("identity", "show")

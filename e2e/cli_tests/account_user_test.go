@@ -18,6 +18,11 @@ func TestAccountSettingsUpdateWithCurrentName(t *testing.T) {
 		t.Skip("account show returned no name")
 	}
 	assertOK(t, h.Run("account", "settings-update", "--name", currentName))
+	show = h.Run("account", "show")
+	assertOK(t, show)
+	if got := show.GetDataString("name"); got != currentName {
+		t.Fatalf("expected account name %q after settings-update, got %q", currentName, got)
+	}
 }
 
 func TestAccountEntropyWithCurrentValue(t *testing.T) {
@@ -29,6 +34,11 @@ func TestAccountEntropyWithCurrentValue(t *testing.T) {
 		days = 7
 	}
 	assertOK(t, h.Run("account", "entropy", "--auto_postpone_period_in_days", strconv.Itoa(days)))
+	show = h.Run("account", "show")
+	assertOK(t, show)
+	if got := show.GetDataInt("auto_postpone_period_in_days"); got != days {
+		t.Fatalf("expected auto_postpone_period_in_days=%d, got %d", days, got)
+	}
 }
 
 func TestAccountJoinCodeShow(t *testing.T) {
@@ -74,6 +84,11 @@ func TestUserShowAndUpdateOwnProfile(t *testing.T) {
 		t.Skip("user show returned no name")
 	}
 	assertOK(t, h.Run("user", "update", userID, "--name", currentName))
+	show = h.Run("user", "show", userID)
+	assertOK(t, show)
+	if got := show.GetDataString("name"); got != currentName {
+		t.Fatalf("expected user name %q after update, got %q", currentName, got)
+	}
 }
 
 func TestUserAvatarUpdateAndRemove(t *testing.T) {

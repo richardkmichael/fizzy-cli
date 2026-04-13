@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/basecamp/fizzy-cli/e2e/harness"
 )
 
 func TestWebhookCRUD(t *testing.T) {
@@ -73,4 +75,5 @@ func TestWebhookCRUD(t *testing.T) {
 	if !deleteResult.GetDataBool("deleted") {
 		t.Fatal("expected deleted=true")
 	}
+	assertResult(t, h.Run("webhook", "show", "--board", boardID, webhookID), harness.ExitNotFound)
 }
