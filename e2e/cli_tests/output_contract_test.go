@@ -48,8 +48,11 @@ func assertNonJSON(t *testing.T, stdout, flag string) {
 	if s == "" {
 		t.Fatalf("--%s: produced empty output", flag)
 	}
-	if strings.HasPrefix(s, `{"ok"`) {
-		t.Fatalf("--%s: output looks like a JSON envelope", flag)
+	var obj map[string]any
+	if err := json.Unmarshal([]byte(s), &obj); err == nil {
+		if _, hasOK := obj["ok"]; hasOK {
+			t.Fatalf("--%s: output looks like a JSON envelope", flag)
+		}
 	}
 }
 

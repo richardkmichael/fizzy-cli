@@ -4,13 +4,14 @@
 	surface-snapshot surface-check lint-actions
 
 BINARY := $(CURDIR)/bin/fizzy
+FIZZY_TEST_BINARY ?= $(BINARY)
 
 # Load local test credentials if present, but refuse tracked local secret files.
 ifneq ($(shell git ls-files --error-unmatch .env.test >/dev/null 2>&1 && echo tracked),)
 $(error .env.test is tracked by Git. Remove it from version control and keep local secret files untracked)
 endif
 -include .env.test
-export FIZZY_TEST_TOKEN FIZZY_TEST_ACCOUNT FIZZY_TEST_API_URL
+export FIZZY_TEST_TOKEN FIZZY_TEST_ACCOUNT FIZZY_TEST_API_URL FIZZY_TEST_BINARY
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -X main.version=$(VERSION)
 
@@ -95,7 +96,7 @@ test-unit: check-toolchain
 e2e: build
 	@if [ -z "$$FIZZY_TEST_TOKEN" ]; then echo "Error: FIZZY_TEST_TOKEN not set"; exit 1; fi
 	@if [ -z "$$FIZZY_TEST_ACCOUNT" ]; then echo "Error: FIZZY_TEST_ACCOUNT not set"; exit 1; fi
-	FIZZY_TEST_BINARY=$(BINARY) go test -v -timeout 10m ./e2e/cli_tests/...
+	go test -v -timeout 10m ./e2e/cli_tests/...
 
 test-e2e: e2e
 
@@ -107,7 +108,7 @@ e2e-file: build
 	@if [ -z "$(FILE)" ]; then echo "Usage: make e2e-file FILE=crud_board"; exit 1; fi
 	@if [ -z "$$FIZZY_TEST_TOKEN" ]; then echo "Error: FIZZY_TEST_TOKEN not set"; exit 1; fi
 	@if [ -z "$$FIZZY_TEST_ACCOUNT" ]; then echo "Error: FIZZY_TEST_ACCOUNT not set"; exit 1; fi
-	FIZZY_TEST_BINARY=$(BINARY) go test -v ./e2e/cli_tests/$(FILE)_test.go
+	go test -v ./e2e/cli_tests/$(FILE)_test.go
 
 test-file: e2e-file
 
@@ -116,7 +117,7 @@ e2e-run: build
 	@if [ -z "$(NAME)" ]; then echo "Usage: make e2e-run NAME=TestBoardList"; exit 1; fi
 	@if [ -z "$$FIZZY_TEST_TOKEN" ]; then echo "Error: FIZZY_TEST_TOKEN not set"; exit 1; fi
 	@if [ -z "$$FIZZY_TEST_ACCOUNT" ]; then echo "Error: FIZZY_TEST_ACCOUNT not set"; exit 1; fi
-	FIZZY_TEST_BINARY=$(BINARY) go test -v -run $(NAME) ./e2e/cli_tests/...
+	go test -v -run $(NAME) ./e2e/cli_tests/...
 
 test-run: e2e-run
 

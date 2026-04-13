@@ -42,7 +42,9 @@ func NewSharedFixture(cfg *Config) (*SharedFixture, error) {
 	}
 	f := &SharedFixture{cfg: cfg, configHome: tmpDir}
 	if err := f.setup(); err != nil {
-		_ = os.RemoveAll(tmpDir)
+		if teardownErr := f.Teardown(); teardownErr != nil {
+			return nil, fmt.Errorf("%w\ncleanup: %v", err, teardownErr)
+		}
 		return nil, err
 	}
 	return f, nil

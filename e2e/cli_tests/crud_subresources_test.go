@@ -106,53 +106,59 @@ func TestStepCRUD(t *testing.T) {
 func TestReactionCRUD(t *testing.T) {
 	h := newHarness(t)
 	cardStr := strconv.Itoa(fixture.CardNumber)
-	assertOK(t, h.Run("reaction", "list", "--card", cardStr))
-	assertOK(t, h.Run("reaction", "list", "--card", cardStr, "--comment", fixture.CommentID))
+	cardReactionsBefore := h.Run("reaction", "list", "--card", cardStr)
+	assertOK(t, cardReactionsBefore)
+	commentReactionsBefore := h.Run("reaction", "list", "--card", cardStr, "--comment", fixture.CommentID)
+	assertOK(t, commentReactionsBefore)
 
 	cardReaction := h.Run("reaction", "create", "--card", cardStr, "--content", "+1")
 	assertOK(t, cardReaction)
-	cardReactionID := cardReaction.GetIDFromLocation()
-	if cardReactionID == "" {
-		cardReactionID = cardReaction.GetDataString("id")
-	}
-	if cardReactionID == "" {
-		t.Fatal("no reaction ID in create response")
-	}
-	t.Cleanup(func() { newHarness(t).Run("reaction", "delete", cardReactionID, "--card", cardStr) })
 	cardReactions := h.Run("reaction", "list", "--card", cardStr)
 	assertOK(t, cardReactions)
+	cardReactionID := listAddedID(cardReactionsBefore.GetDataArray(), cardReactions.GetDataArray())
+	if cardReactionID == "" {
+		t.Fatal("expected created card reaction to appear in list")
+	}
+	t.Cleanup(func() {
+		if cardReactionID != "" {
+			newHarness(t).Run("reaction", "delete", cardReactionID, "--card", cardStr)
+		}
+	})
 	if listMapByID(cardReactions.GetDataArray(), cardReactionID) == nil {
 		t.Fatalf("expected card reaction list to include %q", cardReactionID)
 	}
+	deletedCardReactionID := cardReactionID
 	assertOK(t, h.Run("reaction", "delete", cardReactionID, "--card", cardStr))
+	cardReactionID = ""
 	cardReactions = h.Run("reaction", "list", "--card", cardStr)
 	assertOK(t, cardReactions)
-	if listMapByID(cardReactions.GetDataArray(), cardReactionID) != nil {
-		t.Fatalf("expected deleted card reaction %q to be absent from list", cardReactionID)
+	if listMapByID(cardReactions.GetDataArray(), deletedCardReactionID) != nil {
+		t.Fatalf("expected deleted card reaction %q to be absent from list", deletedCardReactionID)
 	}
 
 	commentReaction := h.Run("reaction", "create", "--card", cardStr, "--comment", fixture.CommentID, "--content", "heart")
 	assertOK(t, commentReaction)
-	commentReactionID := commentReaction.GetIDFromLocation()
-	if commentReactionID == "" {
-		commentReactionID = commentReaction.GetDataString("id")
-	}
-	if commentReactionID == "" {
-		t.Fatal("no comment reaction ID in create response")
-	}
-	t.Cleanup(func() {
-		newHarness(t).Run("reaction", "delete", commentReactionID, "--card", cardStr, "--comment", fixture.CommentID)
-	})
 	commentReactions := h.Run("reaction", "list", "--card", cardStr, "--comment", fixture.CommentID)
 	assertOK(t, commentReactions)
+	commentReactionID := listAddedID(commentReactionsBefore.GetDataArray(), commentReactions.GetDataArray())
+	if commentReactionID == "" {
+		t.Fatal("expected created comment reaction to appear in list")
+	}
+	t.Cleanup(func() {
+		if commentReactionID != "" {
+			newHarness(t).Run("reaction", "delete", commentReactionID, "--card", cardStr, "--comment", fixture.CommentID)
+		}
+	})
 	if listMapByID(commentReactions.GetDataArray(), commentReactionID) == nil {
 		t.Fatalf("expected comment reaction list to include %q", commentReactionID)
 	}
+	deletedCommentReactionID := commentReactionID
 	assertOK(t, h.Run("reaction", "delete", commentReactionID, "--card", cardStr, "--comment", fixture.CommentID))
+	commentReactionID = ""
 	commentReactions = h.Run("reaction", "list", "--card", cardStr, "--comment", fixture.CommentID)
 	assertOK(t, commentReactions)
-	if listMapByID(commentReactions.GetDataArray(), commentReactionID) != nil {
-		t.Fatalf("expected deleted comment reaction %q to be absent from list", commentReactionID)
+	if listMapByID(commentReactions.GetDataArray(), deletedCommentReactionID) != nil {
+		t.Fatalf("expected deleted comment reaction %q to be absent from list", deletedCommentReactionID)
 	}
 }
 

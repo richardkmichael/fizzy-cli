@@ -189,6 +189,33 @@ func listIndexByID(items []any, id string) int {
 	return -1
 }
 
+func listAddedID(before, after []any) string {
+	seen := make(map[string]struct{}, len(before))
+	for _, item := range before {
+		m := asMap(item)
+		if m == nil {
+			continue
+		}
+		if id := mapValueString(m, "id"); id != "" {
+			seen[id] = struct{}{}
+		}
+	}
+	for _, item := range after {
+		m := asMap(item)
+		if m == nil {
+			continue
+		}
+		id := mapValueString(m, "id")
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; !ok {
+			return id
+		}
+	}
+	return ""
+}
+
 func bodyPlainText(m map[string]any) string {
 	if m == nil {
 		return ""
