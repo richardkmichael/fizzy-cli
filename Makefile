@@ -5,7 +5,10 @@
 
 BINARY := $(CURDIR)/bin/fizzy
 
-# Load local test credentials if present (file is git-excluded via .git/info/exclude).
+# Load local test credentials if present, but refuse tracked local secret files.
+ifneq ($(shell git ls-files --error-unmatch .env.test >/dev/null 2>&1 && echo tracked),)
+$(error .env.test is tracked by Git. Remove it from version control and keep local secret files untracked)
+endif
 -include .env.test
 export FIZZY_TEST_TOKEN FIZZY_TEST_ACCOUNT FIZZY_TEST_API_URL
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)

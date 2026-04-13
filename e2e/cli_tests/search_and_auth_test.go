@@ -17,12 +17,12 @@ func TestAuthInvalidToken(t *testing.T) {
 	badCfg := *cfg
 	badCfg.Token = "fizzy_invalid_token"
 	h := harness.NewWithConfig(t, &badCfg)
-	assertResult(t, h.Run("board", "list"), harness.ExitAuth)
+	assertResult(t, h.Run("board", "list"), harness.ExitAuthFailure)
 }
 
 func TestAuthMissingToken(t *testing.T) {
 	missingCfg := *cfg
 	missingCfg.Token = ""
 	h := harness.NewWithConfig(t, &missingCfg)
-	assertResult(t, h.Run("board", "list"), harness.ExitAuth)
+	assertResult(t, h.Run("board", "list"), harness.ExitAuthFailure)
 }

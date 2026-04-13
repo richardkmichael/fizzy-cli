@@ -306,14 +306,14 @@ func avatarRedirects(t *testing.T, avatarURL string) bool {
 			t.Fatalf("fetch avatar headers: %v", err)
 		}
 		resp.Body.Close()
-		switch resp.StatusCode {
-		case http.StatusFound:
-			return true
-		case http.StatusOK:
+		switch {
+		case resp.StatusCode == http.StatusOK:
 			return false
+		case resp.StatusCode/100 == 3:
+			return true
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	t.Fatalf("avatar endpoint %s did not settle on 200 or 302", avatarURL)
+	t.Fatalf("avatar endpoint %s did not settle on 200 or 3xx", avatarURL)
 	return false
 }

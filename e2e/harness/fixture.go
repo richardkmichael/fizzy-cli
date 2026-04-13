@@ -51,13 +51,14 @@ func NewSharedFixture(cfg *Config) (*SharedFixture, error) {
 // Teardown removes all fixture resources. Deleting the board cascades to all
 // child resources (cards, columns, comments, steps, reactions).
 func (f *SharedFixture) Teardown() error {
-	defer os.RemoveAll(f.configHome)
-	if f.BoardID == "" {
-		return nil
+	if f.BoardID != "" {
+		r := f.run("board", "delete", f.BoardID)
+		if r.ExitCode != ExitSuccess && r.ExitCode != ExitNotFound {
+			return fmt.Errorf("delete fixture board %s: exit %d\nstderr: %s", f.BoardID, r.ExitCode, r.Stderr)
+		}
 	}
-	r := f.run("board", "delete", f.BoardID)
-	if r.ExitCode != ExitSuccess && r.ExitCode != ExitNotFound {
-		return fmt.Errorf("delete fixture board %s: exit %d\nstderr: %s", f.BoardID, r.ExitCode, r.Stderr)
+	if err := os.RemoveAll(f.configHome); err != nil {
+		return fmt.Errorf("remove fixture config home %s: %w", f.configHome, err)
 	}
 	return nil
 }
