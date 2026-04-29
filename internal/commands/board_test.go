@@ -722,6 +722,45 @@ func TestBoardAccesses(t *testing.T) {
 		}
 	})
 
+	t.Run("includes next pagination context and breadcrumb", func(t *testing.T) {
+		mock := NewMockClient()
+		mock.GetResponse = &client.APIResponse{
+			StatusCode: 200,
+			Data:       map[string]any{"board_id": "123", "all_access": false, "users": []any{}},
+			LinkNext:   "/boards/123/accesses.json?page=2",
+		}
+
+		result := SetTestModeWithSDK(mock)
+		SetTestConfig("token", "account", "https://api.example.com")
+		defer resetTest()
+
+		boardAccessesBoard = "123"
+		err := boardAccessesCmd.RunE(boardAccessesCmd, []string{})
+		boardAccessesBoard = ""
+		boardAccessesPage = 0
+
+		assertExitCode(t, err, 0)
+
+		var nextCmd string
+		for _, bc := range result.Response.Breadcrumbs {
+			if bc.Action == "next" {
+				nextCmd = bc.Cmd
+				break
+			}
+		}
+		if nextCmd != "fizzy board accesses --board 123 --page 2" {
+			t.Fatalf("expected next breadcrumb, got %q", nextCmd)
+		}
+
+		pagination, ok := result.Response.Context["pagination"].(map[string]any)
+		if !ok {
+			t.Fatalf("expected pagination context, got %#v", result.Response.Context)
+		}
+		if pagination["has_next"] != true || pagination["next_url"] != "/boards/123/accesses.json?page=2" {
+			t.Fatalf("unexpected pagination context: %#v", pagination)
+		}
+	})
+
 	t.Run("requires board", func(t *testing.T) {
 		mock := NewMockClient()
 		SetTestModeWithSDK(mock)

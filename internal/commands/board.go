@@ -439,10 +439,11 @@ var boardAccessesCmd = &cobra.Command{
 			page = &pageVal
 		}
 
-		data, _, err := getSDK().Boards().ListBoardAccesses(cmd.Context(), boardID, page)
+		data, resp, err := getSDK().Boards().ListBoardAccesses(cmd.Context(), boardID, page)
 		if err != nil {
 			return convertSDKError(err)
 		}
+		linkNext := parseSDKLinkNext(resp)
 
 		summary := "Board accesses"
 		if boardAccessesPage > 0 {
@@ -454,7 +455,16 @@ var boardAccessesCmd = &cobra.Command{
 			breadcrumb("cards", fmt.Sprintf("fizzy card list --board %s", boardID), "List cards"),
 		}
 
-		printDetail(normalizeAny(data), summary, breadcrumbs)
+		hasNext := linkNext != ""
+		if hasNext {
+			nextPage := boardAccessesPage + 1
+			if boardAccessesPage == 0 {
+				nextPage = 2
+			}
+			breadcrumbs = append(breadcrumbs, breadcrumb("next", fmt.Sprintf("fizzy board accesses --board %s --page %d", boardID, nextPage), "Next page"))
+		}
+
+		printDetailPaginated(normalizeAny(data), summary, breadcrumbs, hasNext, linkNext)
 		return nil
 	},
 }
