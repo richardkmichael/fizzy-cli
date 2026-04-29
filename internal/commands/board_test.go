@@ -688,6 +688,9 @@ func TestBoardAccesses(t *testing.T) {
 		boardAccessesPage = 0
 
 		assertExitCode(t, err, 0)
+		if len(mock.GetCalls) != 1 {
+			t.Fatalf("expected 1 GET call, got %d", len(mock.GetCalls))
+		}
 		if mock.GetCalls[0].Path != "/boards/123/accesses.json" {
 			t.Errorf("expected path '/boards/123/accesses.json', got '%s'", mock.GetCalls[0].Path)
 		}
@@ -711,6 +714,9 @@ func TestBoardAccesses(t *testing.T) {
 		boardAccessesPage = 0
 
 		assertExitCode(t, err, 0)
+		if len(mock.GetCalls) != 1 {
+			t.Fatalf("expected 1 GET call, got %d", len(mock.GetCalls))
+		}
 		if mock.GetCalls[0].Path != "/boards/123/accesses.json?page=2" {
 			t.Errorf("expected path '/boards/123/accesses.json?page=2', got '%s'", mock.GetCalls[0].Path)
 		}

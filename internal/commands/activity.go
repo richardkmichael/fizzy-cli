@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -36,10 +37,10 @@ var activityListCmd = &cobra.Command{
 
 		var params []string
 		if activityListBoard != "" {
-			params = append(params, "board_ids[]="+activityListBoard)
+			params = append(params, "board_ids[]="+url.QueryEscape(activityListBoard))
 		}
 		if activityListCreator != "" {
-			params = append(params, "creator_ids[]="+activityListCreator)
+			params = append(params, "creator_ids[]="+url.QueryEscape(activityListCreator))
 		}
 		if activityListPage > 0 {
 			params = append(params, "page="+strconv.Itoa(activityListPage))

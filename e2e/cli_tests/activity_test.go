@@ -14,39 +14,37 @@ func TestActivityList(t *testing.T) {
 	cardNum := createCard(t, h, boardID)
 	creatorID := currentUserID(t, h)
 
+	cardNumStr := strconv.Itoa(cardNum)
 	var result *harness.Result
+	foundCard := false
 	for attempt := 0; attempt < 10; attempt++ {
 		r := h.Run("activity", "list", "--board", boardID)
-		if r.ExitCode == harness.ExitSuccess && len(r.GetDataArray()) > 0 {
+		if r.ExitCode == harness.ExitSuccess {
 			result = r
-			break
+			for _, item := range r.GetDataArray() {
+				m := asMap(item)
+				if m == nil {
+					continue
+				}
+				if eventable := asMap(m["eventable"]); eventable != nil {
+					if mapValueString(eventable, "number") == cardNumStr {
+						foundCard = true
+						break
+					}
+				}
+			}
+			if foundCard {
+				break
+			}
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
 	if result == nil {
-		t.Fatal("expected at least one activity for throwaway board")
+		t.Fatal("expected at least one successful activity list call")
 	}
-
 	assertOK(t, result)
-	if len(result.GetDataArray()) == 0 {
-		t.Fatal("expected activity list to return at least one item")
-	}
-
-	foundCard := false
-	for _, item := range result.GetDataArray() {
-		m := asMap(item)
-		if m == nil {
-			continue
-		}
-		if eventable := asMap(m["eventable"]); eventable != nil {
-			if got := mapValueString(eventable, "number"); got == strconv.Itoa(cardNum) {
-				foundCard = true
-				break
-			}
-		}
-	}
 	if !foundCard {
-		t.Logf("activity list did not expose created card number %d; continuing because board activity was non-empty", cardNum)
+		t.Fatalf("activity list did not expose created card number %d after retries", cardNum)
 	}
 
 	creatorResult := h.Run("activity", "list", "--board", boardID, "--creator", creatorID)
