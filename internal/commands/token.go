@@ -17,6 +17,7 @@ var tokenListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List personal access tokens",
 	Long:  "Lists your personal access tokens.",
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuth(); err != nil {
 			return err
@@ -55,6 +56,7 @@ var tokenCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a personal access token",
 	Long:  "Creates a new personal access token. The token value is shown once at creation and cannot be retrieved later.",
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := requireAuth(); err != nil {
 			return err
