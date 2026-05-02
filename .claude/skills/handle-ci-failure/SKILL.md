@@ -6,15 +6,9 @@ argument-hint: "[run-id | run-url]"
 
 # Handle CI failure
 
-## Setup: read project CI context
+## Project CI context
 
-Before doing anything else, check for a `CI*.md` file in the project root:
-
-```bash
-ls CI*.md 2>/dev/null
-```
-
-If one exists, read it. It supplies project-specific facts that the generic steps below depend on: the working branch name, upstream remote and base, check command, sync workflow names, and any known recurring conflict files. Where these steps say "see CI*.md", substitute the values from that file. If no `CI*.md` exists, fall back to common defaults (branch: infer from current, check command: `make check` or equivalent, push: `--force-with-lease`).
+!`cat CI*.md 2>/dev/null || echo "No CI*.md found — using defaults: branch from git, check command: make check, push: --force-with-lease."`
 
 ## Inputs
 
