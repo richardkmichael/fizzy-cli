@@ -36,13 +36,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Rebase time-tracking onto upstream master (preview only)
-        run: git rebase upstream/master
-
       - name: Set up Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: go.mod
+
+      - name: Rebase time-tracking onto upstream master (preview only)
+        run: |
+          # -X ours takes upstream's SURFACE.txt on any conflict; we regenerate below.
+          git rebase -X ours upstream/master
+          # Regenerate to restore fork-specific commands (no commit needed — preview only).
+          GENERATE_SURFACE=1 go test ./internal/commands/ -run TestGenerateSurfaceSnapshot -v
 
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
