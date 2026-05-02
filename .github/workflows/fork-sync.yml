@@ -145,6 +145,9 @@ jobs:
             git commit --amend --no-edit
           fi
 
+      - name: Verify rebased branch compiles and passes tests
+        run: make check
+
       # Force-push is required because rebase rewrites commit SHAs.
       # This push (via SYNC_TOKEN) triggers fork-release.yml.
       - name: Push rebased time-tracking
