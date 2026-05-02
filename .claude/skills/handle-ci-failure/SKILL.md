@@ -1,21 +1,28 @@
 ---
 name: handle-ci-failure
-description: "TRIGGER immediately — before any manual investigation — whenever the user mentions CI on this fork: 'CI is failing', 'why is CI red?', 'the build is broken', 'CI failed', a run ID, a GitHub Actions URL, or any question about a failed workflow run on `time-tracking`. Do not investigate manually first. This skill diagnoses the failure, matches it to a known pattern, applies the fix, verifies with `make check`, and commits + force-pushes. Targets mechanical fork-maintenance failures — not open-ended debugging."
+description: "TRIGGER immediately — before any manual investigation — whenever the user mentions CI failures: 'CI is failing', 'why is CI red?', 'the build is broken', 'CI failed', a run ID, a GitHub Actions URL, or any question about a failed workflow run. Do not investigate manually first. This skill reads project-local CI context (CI*.md), diagnoses the failure, matches it to a known pattern, applies the fix, verifies, and commits + pushes. Targets mechanical CI failures — not open-ended debugging."
 argument-hint: "[run-id | run-url]"
 ---
 
 # Handle CI failure
 
-Scope: this skill operates on the fork's `time-tracking` branch only. If the failing run is on a different branch, stop and report.
+## Setup: read project CI context
+
+Before doing anything else, check for a `CI*.md` file in the project root:
+
+```bash
+ls CI*.md 2>/dev/null
+```
+
+If one exists, read it. It supplies project-specific facts that the generic steps below depend on: the working branch name, upstream remote and base, check command, sync workflow names, and any known recurring conflict files. Where these steps say "see CI*.md", substitute the values from that file. If no `CI*.md` exists, fall back to common defaults (branch: infer from current, check command: `make check` or equivalent, push: `--force-with-lease`).
 
 ## Inputs
 
 The user may provide:
 
 - A bare run ID (`24375242526`).
-- A `View results:` URL from a GitHub notification email
-  - Extract the numeric run ID from a URL with `grep -oE 'actions/runs/[0-9]+' <<<"$input" | cut -d/ -f3`.
-- Nothing — list recent failures on `time-tracking` and ask.
+- A `View results:` URL from a GitHub notification email — extract the numeric run ID with `grep -oE 'actions/runs/[0-9]+' <<<"$input" | cut -d/ -f3`.
+- Nothing — list recent failures on the working branch and ask.
 
 ## Workflow
 
@@ -24,10 +31,10 @@ The user may provide:
 If the user gave one, use it. Otherwise:
 
 ```bash
-gh run list --branch time-tracking --status=failure --limit 5
+gh run list --branch <branch> --status=failure --limit 5
 ```
 
-Show the list with run IDs and ages, and ask which one to handle. Don't silently pick "most recent" — it drifts between sessions, and picking the wrong failure wastes more time than asking does.
+Show the list with run IDs and ages, and ask which one to handle. Don't silently pick "most recent" — it drifts between sessions.
 
 ### 2. Extract failure context
 
@@ -52,7 +59,7 @@ Output JSON shape:
 }
 ```
 
-Read the JSON once. Don't re-query `gh` for data the script already pulled — it wastes tool calls and risks reasoning about a stale view.
+Read the JSON once. Don't re-query `gh` for data the script already pulled.
 
 ### 3. Identify the real signal
 
@@ -60,66 +67,59 @@ Read the JSON once. Don't re-query `gh` for data the script already pulled — i
 
 ### 4. Match a known failure pattern
 
-Match the failure against the table below. Each pattern has a dedicated reference file with its fix recipe; read only the one that matches.
-
-| Pattern                                                                                    | Reference                                  |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| Rebase step itself failed (merge conflict during fork-sync / fork-preview rebase)          | `references/rebase-merge-conflict.md`      |
-| Rebase succeeded, post-rebase `make check` / test step failed (vet, lint, compile, tests) | `references/post-rebase-check-failure.md`  |
-| `make check` step failed with tool not found (e.g. `golangci-lint: No such file or directory`) | `references/workflow-tool-missing.md`  |
+| Pattern                                                                                         | Reference                                  |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Rebase step itself failed (merge conflict during a sync or preview workflow)                    | `references/rebase-merge-conflict.md`      |
+| Rebase succeeded, post-rebase check/test step failed (vet, lint, compile, tests)                | `references/post-rebase-check-failure.md`  |
+| Check step failed with tool not found (e.g. `golangci-lint: No such file or directory`)        | `references/workflow-tool-missing.md`      |
 
 Quick triage heuristic:
 
-- `workflow` is `Fork sync` or `Fork preview` and `failed_step` mentions rebase, or `log_tail` shows conflict markers → rebase merge conflict.
-- `workflow` is `CI` (or `Fork preview` post-rebase step) and annotations point at source files with compile/lint/test errors → post-rebase check failure.
-- `workflow` is `Fork sync` or `Fork preview` and `log_tail` shows `No such file or directory` or `command not found` for a tool → workflow tool missing.
+- Sync or preview workflow + `failed_step` mentions rebase, or `log_tail` shows conflict markers → rebase merge conflict.
+- CI workflow (or post-rebase check step) + annotations point at source files with compile/lint/test errors → post-rebase check failure.
+- Sync or preview workflow + `log_tail` shows `No such file or directory` or `command not found` for a tool → workflow tool missing.
 
-If neither fits, stop and report the diagnosis. This skill is for mechanical, well-understood failure classes — not open-ended debugging. Adding a new pattern is cheap (drop a file in `references/`, add a row here) but should be done deliberately after seeing the failure more than once.
+If none fits, stop and report the diagnosis. This skill is for mechanical, well-understood failure classes — not open-ended debugging. Adding a new pattern is cheap (drop a file in `references/`, add a row here) but should be done deliberately after seeing the failure more than once.
 
 ### 5. Verify
 
-```bash
-make check
-```
-
-Runs fmt-check, vet, lint, race tests, and tidy-check. Must be green before committing. If it isn't, the fix is incomplete — don't paper over with `// nolint` or by deleting tests. For non-trivial changes, also run affected unit tests explicitly.
+Run the project's check command (see CI*.md; default `make check`). Must be green before committing. If it isn't, the fix is incomplete — don't paper over with `// nolint` or by deleting tests.
 
 ### 6. Commit
 
-Before committing, confirm the working branch is `time-tracking` (`git branch --show-current`). If it isn't, stop — don't commit the fix to a different branch.
+Confirm the working branch matches what CI*.md specifies (`git branch --show-current`). If it doesn't, stop.
 
-Follow the project's commit style: terse but informative, prose for a single complex fix, bullets for multiple distinct changes. Explain why, not what. Include the `Co-Authored-By:` trailer matching the format of recent commits on this branch.
+Follow the project's commit style: terse but informative, prose for a single complex fix, bullets for multiple distinct changes. Explain why, not what.
 
-Stage explicitly — `git add -u` for tracked files, `git add <path>` for new ones. Never `git add -A`. Before committing, confirm `CLAUDE.md` and `CLAUDE.local.md` are not in the staged set.
+Stage explicitly — `git add -u` for tracked files, `git add <path>` for new ones. Never `git add -A`. Before committing, confirm `CLAUDE.md` and `CLAUDE.local.md` are not staged.
 
 ### 7. Push
 
 ```bash
-git push --force-with-lease origin time-tracking
+git push --force-with-lease origin <branch>
 ```
 
-Force-push is normal on `time-tracking` — the fork-sync workflow force-pushes on every rebase, so the branch is not append-only. `--force-with-lease` protects against racing the scheduled sync: if the workflow rebased between your fetch and your push, the push fails and you re-investigate before retrying.
+Use `--force-with-lease` by default; use plain `--force` only if the remote was updated by an automated workflow between your fetch and your push (confirm this is the case before overriding).
 
 ### 8. Confirm green
 
 ```bash
-gh run list --branch time-tracking --limit 3
+gh run list --branch <branch> --limit 3
 ```
 
-The push triggers a new CI run. Watch it with `gh run watch <run-id> --exit-status`, or hand the user the URL. If it fails again with a different error, start over at step 1. If it fails with the same error, the fix didn't actually address the root cause.
+Watch the new run with `gh run watch <run-id> --exit-status`. If it fails again with a different error, start over at step 1.
 
 ## Guardrails
 
 - Never commit `CLAUDE.md` or `CLAUDE.local.md`.
-- Never pass `--no-verify` or skip signing. If a hook fails, investigate the complaint — don't route around it.
+- Never pass `--no-verify` or skip signing.
 - Never use `git add -A` or `git add .`. Always stage explicitly.
 - Never amend a pushed commit. New fix → new commit.
-- Never force-push to `master` or any non-fork branch.
-- If the failing run is on any branch other than `time-tracking`, stop.
+- Never force-push to a protected upstream branch (e.g. `master`, `main`).
 
 ## When to stop and escalate
 
 - Failure doesn't match a pattern in the table above.
-- Local rebase reproduces a *different* error than CI reported — your local state diverged; investigate before fixing.
-- `make check` won't go green after what looks like the right fix — don't commit a partial fix to "unblock CI". Report what's left.
-- Multiple jobs failed for unrelated reasons — handle them one at a time, not as a bundle.
+- Local reproduction gives a *different* error than CI reported — local state diverged; investigate before fixing.
+- Check command won't go green after what looks like the right fix — don't commit a partial fix. Report what's left.
+- Multiple jobs failed for unrelated reasons — handle them one at a time.
