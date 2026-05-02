@@ -1,13 +1,13 @@
 # Rebase merge conflict
 
-The fork-sync (or fork-preview) workflow's `git rebase upstream/master` step hit a merge conflict and bailed out. The rebase did not complete, so `time-tracking` on `origin` is usually untouched (the workflow aborts the partial rebase before exiting). Your job is to reproduce the conflict locally, resolve it by understanding both sides of the diff, finish the rebase, and push the result.
+The rebase step of a sync workflow hit a merge conflict and bailed out. The rebase did not complete, so the working branch on `origin` is usually untouched (the workflow aborts the partial rebase before exiting). Your job is to reproduce the conflict locally, resolve it, finish the rebase, and push.
 
 ## Recognizing this pattern
 
 Signals that route here:
 
-- `workflow` is `Fork sync` or `Fork preview`.
-- `failed_step` contains "rebase" (e.g. `Rebase onto upstream master`).
+- `workflow` is a sync or preview workflow (see `CI*.md` for names).
+- `failed_step` contains "rebase".
 - `log_tail` includes one of:
   - `CONFLICT (content): Merge conflict in <path>`
   - `CONFLICT (modify/delete): ... deleted in HEAD`
@@ -19,67 +19,52 @@ If you see compile errors or test failures instead, you're in the wrong pattern 
 
 ## Fix recipe
 
-1. Make sure your local `time-tracking` matches what the workflow tried to rebase. Since the workflow aborts on conflict, `origin/time-tracking` should not have advanced since the last successful sync — but confirm:
+1. Confirm local state matches what the workflow tried to rebase:
 
 ```bash
 git fetch origin upstream
-git status
-git log --oneline origin/time-tracking..time-tracking     # local-only commits
-git log --oneline time-tracking..origin/time-tracking     # remote-only commits
+git log --oneline origin/<branch>..<branch>   # local-only commits
+git log --oneline <branch>..origin/<branch>   # remote-only commits
 ```
 
-If there are unexpected divergences, reconcile them before rebasing — don't discard anything.
+(Branch name and upstream remote are in `CI*.md`.)
 
 2. Reproduce the conflict:
 
 ```bash
-git switch time-tracking
-git rebase upstream/master
+git switch <branch>
+git rebase <upstream-base>
 ```
 
 Rebase will stop on the same commit the workflow stopped on, with the same conflicts.
 
-3. For each conflicted file, understand both sides of the diff:
+3. For each conflicted file, understand both sides:
 
 ```bash
-git diff --ours <file>      # what our fork commit tried to apply
+git diff --ours <file>      # what our commit tried to apply
 git diff --theirs <file>    # what upstream did
-git log --oneline upstream/master -- <file>     # recent upstream changes to this file
-git log --oneline <fork-commit> -- <file>       # fork's changes to this file
+git log --oneline <upstream-base> -- <file>    # recent upstream changes
+git log --oneline <our-commit> -- <file>       # our changes to this file
 ```
 
-**Special case — `SURFACE.txt`:** This file is auto-generated from the registered command tree. Never resolve it by hand. Instead:
+**Auto-generated files:** Never resolve by hand. Check `CI*.md` for the project's regeneration command. The general pattern is:
 
 ```bash
-# Accept upstream's version (our fork entries will be regenerated below)
-git checkout --theirs SURFACE.txt
-git add SURFACE.txt
-git rebase --continue   # repeat for any remaining commits that touch SURFACE.txt
-
-# After the rebase completes, regenerate to restore fork-specific commands
-GENERATE_SURFACE=1 go test ./internal/commands/ -run TestGenerateSurfaceSnapshot -v
-git add SURFACE.txt
-git commit --amend --no-edit   # fold into the last commit
-```
-
-Alternatively, run the entire rebase with `-X ours` (takes upstream's version on every conflict) and regenerate once at the end:
-
-```bash
-git rebase -X ours upstream/master
-GENERATE_SURFACE=1 go test ./internal/commands/ -run TestGenerateSurfaceSnapshot -v
-if ! git diff --quiet SURFACE.txt; then
-  git add SURFACE.txt
+# Run the rebase taking the upstream version on any conflict
+git rebase -X ours <upstream-base>
+# Regenerate the file to restore project-local additions
+<regeneration command from CI*.md>
+if ! git diff --quiet <file>; then
+  git add <file>
   git commit --amend --no-edit
 fi
 ```
 
-For all other conflicted files, resolve by combining intent, not just by picking a side:
+**All other files:** Resolve by combining intent, not just by picking a side:
 
-- If upstream moved or renamed the code the fork was patching, port the fork's change to the new location/name in the upstream version.
-- If upstream already made an equivalent change, drop the fork's version (the fork's addition is now redundant — favor upstream).
-- If upstream removed the surface the fork was patching (e.g., deleted a helper the fork's change added behavior to), the fork's change is orphaned. Evaluate whether the intent still applies in the new upstream layout; if it does, re-implement in the new shape, otherwise drop it.
-
-Whenever you can resolve by *removing* fork-local code in favor of upstream, do. Minimum-divergence reduces future conflict surface.
+- If upstream moved or renamed the code we were patching, port the change to the new location.
+- If upstream already made an equivalent change, drop our version (favor upstream, reduce divergence).
+- If upstream removed the surface we were patching, evaluate whether the intent still applies in the new layout; re-implement if it does, drop it if not.
 
 4. After resolving each file, stage and continue:
 
@@ -93,22 +78,20 @@ Repeat steps 3–4 for each conflicting commit until the rebase completes.
 5. Verify:
 
 ```bash
-make check
+<check command from CI*.md>
 ```
 
 If this fails, you now have a post-rebase check failure — switch to `post-rebase-check-failure.md` and continue there before pushing.
 
-6. Return to SKILL.md step 6 (commit — but note: the rebase itself produced the "commit" by replaying; the next action is actually step 7, push). Specifically:
+6. Push (no new commit to author — rebase replayed existing commits with new SHAs):
 
 ```bash
-git push --force-with-lease origin time-tracking
+git push --force-with-lease origin <branch>
 ```
-
-No new commit to author — the rebase replayed the existing fork commits with new SHAs. The push itself is what unblocks the next sync cycle.
 
 ## Red flags (stop, don't auto-resolve)
 
 - The conflict is non-textual: binary files, generated artifacts, vendored dependencies. Resolution needs human judgment about which version should win.
-- The conflict spans a large semantic restructure (a helper's signature changed, and resolving means rewriting how the fork uses it). At that point it's not a merge conflict you're resolving — it's a redesign, and the fork's diff-against-upstream should be reconsidered, not just patched through.
-- `git rebase --abort` has already been run by you or the workflow, and the working tree has unrelated changes. Clean up first; resolving a conflict on top of dirty state risks losing work.
-- Repeated runs produce different conflicts — usually means upstream is moving faster than the sync cadence can keep up with. Consider rebasing more often instead of fighting bigger conflicts.
+- The conflict spans a large semantic restructure (a helper's signature changed, and resolving means rewriting how we use it). At that point it's a redesign, not a merge conflict.
+- `git rebase --abort` has already been run and the working tree has unrelated changes. Clean up first.
+- Repeated runs produce different conflicts — upstream is moving faster than the sync cadence. Consider rebasing more often instead of fighting bigger conflicts.
