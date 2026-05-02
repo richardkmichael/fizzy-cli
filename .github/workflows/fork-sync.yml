@@ -5,8 +5,13 @@ name: Fork sync
 # default GITHUB_TOKEN — triggers fork-release.yml, which does the actual
 # tagging and goreleaser run.
 #
-# Temporarily tracks upstream master until next upstream release (post-v3.0.3),
-# at which point this should switch to tracking release tags.
+# Tracking policy: follows upstream master until upstream cuts a stable release.
+# v3.0.3 is the last stable upstream release (2026-03-02). v4.0.0-rc.1 exists
+# but is a release candidate, not stable. Until a stable v4.0.0 (or later) is
+# published at https://github.com/basecamp/fizzy-cli/releases, following master
+# is correct and fork releases will carry rc-based version strings (e.g.
+# 4.0.0-rc.1-tt.N.gSHA). When a stable release appears, switch this workflow
+# to rebase onto that release tag instead of upstream/master.
 
 on:
   schedule:
