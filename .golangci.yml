@@ -48,8 +48,6 @@ linters:
         - G704
         # CLI renders API responses to terminal, not a browser context
         - G705
-        # SameSite is a browser CSRF mitigation; CLI cookie jars have no browser context
-        - G124
     revive:
       rules:
         - name: blank-imports
