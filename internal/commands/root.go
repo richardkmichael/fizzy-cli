@@ -1396,6 +1396,7 @@ func ResetTestMode() {
 	cfgLimit = 0
 	cfgJQ = ""
 	cfgProfile = ""
+	pendingExitCode = 0
 	if updateCancel != nil {
 		updateCancel()
 	}
