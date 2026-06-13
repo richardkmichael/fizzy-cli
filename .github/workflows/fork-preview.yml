@@ -1,0 +1,91 @@
+name: Fork preview
+
+on:
+  schedule:
+    - cron: "20 */12 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: fork-preview
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  test:
+    name: Preview rebase against upstream master
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: time-tracking
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/basecamp/fizzy-cli.git
+          git fetch upstream --tags
+          git fetch upstream master
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Mirrors fork-sync's resolution so the preview rehearses the same rebase.
+      - name: Resolve latest upstream release
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh api repos/basecamp/fizzy-cli/releases/latest --jq .tag_name)
+          echo "upstream_tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Rebase time-tracking onto the latest upstream release (preview only)
+        env:
+          UPSTREAM_TAG: ${{ steps.resolve.outputs.upstream_tag }}
+        run: |
+          # --onto against the recorded base replays exactly the fork's own
+          # commits; see fork-sync.yml for why a plain rebase is not enough.
+          #
+          # -X ours takes upstream's SURFACE.txt on any conflict; we regenerate below.
+          git rebase -X ours --onto "$UPSTREAM_TAG" upstream-base
+
+      # Must run after the rebase: go-version-file reads the working tree, and
+      # setup-go pins GOTOOLCHAIN=local. Installing beforehand resolves the
+      # pre-rebase go.mod, so any upstream bump to the go directive leaves every
+      # later Go step running a toolchain older than the tree requires.
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+
+      - name: Regenerate SURFACE.txt
+        # Restores fork-specific commands (no commit needed — preview only).
+        run: GENERATE_SURFACE=1 go test ./internal/commands/ -run TestGenerateSurfaceSnapshot -v
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.10
+          args: --help
+
+      - name: Run checks
+        run: make check
+
+      - name: Verify build
+        env:
+          UPSTREAM_TAG: ${{ steps.resolve.outputs.upstream_tag }}
+        run: |
+          make build
+          VERSION=$(./bin/fizzy --version)
+          echo "Version output: $VERSION"
+          {
+            echo "### Preview build"
+            echo "- Rebased onto: $UPSTREAM_TAG ($(git rev-parse --short "$UPSTREAM_TAG"))"
+            echo "- Version: \`$VERSION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
