@@ -1,3 +1,38 @@
+<!-- fork:begin — fork-specific notes; kept above upstream content for clean rebases -->
+
+# Time-tracking fork
+
+This is a fork of [basecamp/fizzy-cli](https://github.com/basecamp/fizzy-cli)
+that adds time tracking commands (`fizzy time list|add|update|…`) and a
+`self-update` subcommand. The `time-tracking` branch is continuously rebased
+onto upstream `master`; releases are tagged `vX.Y.Z-tt.N.g<sha>`.
+
+## Install the fork binary
+
+Download the latest `fizzy-<os>-<arch>` asset from
+[Releases](https://github.com/richardkmichael/fizzy-cli/releases/latest) and
+drop it on your `PATH`. For example, on macOS ARM64:
+
+```bash
+curl -fsSL -o ~/bin/fizzy \
+    https://github.com/richardkmichael/fizzy-cli/releases/latest/download/fizzy-darwin-arm64
+chmod +x ~/bin/fizzy
+```
+
+## Keep it current
+
+```bash
+fizzy self-update           # download + install the latest fork release
+fizzy self-update --check   # report current vs latest without installing
+```
+
+`self-update` downloads the matching `fizzy-<os>-<arch>` asset, verifies its
+SHA256 against `checksums.txt`, and atomically replaces the running binary.
+It refuses to run when the binary path is inside a git worktree, so it won't
+clobber a local `make build`.
+
+<!-- fork:end -->
+
 # <img src="assets/fizzy-badge.png" height="28" alt="Fizzy"> Fizzy CLI
 
 ```
