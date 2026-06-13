@@ -1,0 +1,49 @@
+version: 2
+
+project_name: fizzy
+
+builds:
+  - id: fizzy
+    main: ./cmd/fizzy
+    binary: fizzy
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: binaries
+    ids: [fizzy]
+    formats: [binary]
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+nfpms:
+  - id: packages
+    package_name: fizzy-cli
+    ids: [fizzy]
+    homepage: "https://github.com/richardkmichael/fizzy-cli"
+    maintainer: "Richard Michael <richard@richardkmichael.com>"
+    description: "CLI for managing Fizzy boards, cards, and tasks (with time tracking)"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+
+# TODO: Switch to `use: github-native` after the first fork release creates a
+# tag that the GitHub API can use as a previous reference.
+changelog:
+  sort: asc

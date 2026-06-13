@@ -1,0 +1,229 @@
+name: Fork sync
+
+# Rebases time-tracking onto upstream's latest stable release. The sync job's
+# force-push to time-tracking — when authored with SYNC_TOKEN (a PAT) rather
+# than the default GITHUB_TOKEN — triggers fork-release.yml, which does the
+# actual tagging and goreleaser run.
+#
+# Tracking policy: follows the latest stable upstream release, resolved from
+# the releases API, whose "latest" excludes prereleases. The fork carries only
+# its own functionality, replayed onto that tag, so the fork releases when
+# upstream does rather than on every upstream commit.
+#
+# The rebase runs --onto against the upstream-base tag, which records the base
+# the fork currently sits on. A plain `git rebase <tag>` is a silent no-op when
+# the tag is already an ancestor of HEAD — which is exactly the case when the
+# fork sits on a commit newer than the release being targeted, and would leave
+# the fork on an unreleased base while reporting success.
+
+on:
+  schedule:
+    - cron: "20 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force sync even if already synced against this upstream SHA"
+        type: boolean
+        default: false
+
+concurrency:
+  group: fork-sync
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  check-upstream:
+    name: Check for upstream changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should_sync: ${{ steps.decide.outputs.should_sync }}
+      upstream_tag: ${{ steps.resolve.outputs.upstream_tag }}
+    steps:
+      # "latest" is GitHub's newest non-prerelease, so release candidates are
+      # skipped without having to parse version strings.
+      - name: Resolve latest upstream release
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh api repos/basecamp/fizzy-cli/releases/latest --jq .tag_name || true)
+
+          if [ -z "$TAG" ]; then
+            echo "::warning::Could not resolve latest upstream release"
+            echo "upstream_tag=" >> "$GITHUB_OUTPUT"
+          else
+            echo "upstream_tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check cache for previous sync
+        if: steps.resolve.outputs.upstream_tag != '' && inputs.force != true
+        id: cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .last-synced-sha
+          key: last-synced-sha-${{ steps.resolve.outputs.upstream_tag }}
+
+      - name: Decide whether to sync
+        id: decide
+        env:
+          UPSTREAM_TAG: ${{ steps.resolve.outputs.upstream_tag }}
+          CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          if [ -z "$UPSTREAM_TAG" ]; then
+            echo "should_sync=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: could not resolve upstream release"
+          elif [ "$FORCE" = "true" ]; then
+            echo "should_sync=true" >> "$GITHUB_OUTPUT"
+            echo "Syncing: force=true"
+          elif [ "$CACHE_HIT" = "true" ]; then
+            echo "should_sync=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: already synced against $UPSTREAM_TAG"
+          else
+            echo "should_sync=true" >> "$GITHUB_OUTPUT"
+            echo "Syncing: new upstream release $UPSTREAM_TAG"
+          fi
+
+          {
+            echo "### Fork sync check"
+            echo "- Upstream release: \`$UPSTREAM_TAG\`"
+            echo "- Should sync: \`$(grep should_sync "$GITHUB_OUTPUT" | cut -d= -f2)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  sync-fork:
+    name: Sync fork and rebase
+    needs: check-upstream
+    if: needs.check-upstream.outputs.should_sync == 'true'
+    runs-on: ubuntu-latest
+    environment: Sync
+    permissions:
+      contents: write
+    steps:
+      # Server-side sync avoids needing to push workflow file changes
+      # (which requires a PAT — GITHUB_TOKEN cannot push .github/workflows/)
+      - name: Sync fork master from upstream
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: gh repo sync ${{ github.repository }} --branch master
+
+      # Use SYNC_TOKEN (PAT) as the checkout's git credential so the later
+      # force-push to time-tracking is attributed to the PAT's user —
+      # pushes authored by GITHUB_TOKEN do not trigger downstream workflows
+      # (GitHub prevents workflow cascade loops).
+      - name: Checkout fork
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked] -- credentials needed for git push
+        with:
+          ref: time-tracking
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream with tags
+        run: |
+          git remote add upstream https://github.com/basecamp/fizzy-cli.git
+          git fetch upstream --tags
+          git fetch upstream master
+
+      - name: Rebase time-tracking onto the latest upstream release
+        env:
+          UPSTREAM_TAG: ${{ needs.check-upstream.outputs.upstream_tag }}
+        run: |
+          git checkout time-tracking
+          # --onto against the recorded base replays exactly the fork's own
+          # commits. Rebasing directly onto the tag would do nothing whenever
+          # the tag is already an ancestor of HEAD.
+          #
+          # -X ours takes upstream's SURFACE.txt on any conflict; we regenerate below.
+          git rebase -X ours --onto "$UPSTREAM_TAG" upstream-base
+
+      # Must run after the rebase: go-version-file reads the working tree, and
+      # setup-go pins GOTOOLCHAIN=local. Installing beforehand resolves the
+      # pre-rebase go.mod, so any upstream bump to the go directive leaves every
+      # later Go step running a toolchain older than the tree requires.
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+
+      - name: Regenerate SURFACE.txt
+        # Restores fork-specific commands (fizzy time, self-update).
+        run: |
+          GENERATE_SURFACE=1 go test ./internal/commands/ -run TestGenerateSurfaceSnapshot -v
+          if ! git diff --quiet SURFACE.txt; then
+            git add SURFACE.txt
+            git commit --amend --no-edit
+          fi
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.10
+          args: --help
+
+      - name: Verify rebased branch compiles and passes tests
+        run: make check
+
+      # Must precede the branch push. That push triggers fork-release.yml, which
+      # derives the release version from this marker — publishing before the
+      # marker moves races the release against a base it has already left.
+      #
+      # The two pushes are not atomic, so ordering picks which way a failure
+      # between them breaks. A marker ahead of the branch is self-correcting:
+      # upstream's commits between two releases are never ancestors of our HEAD,
+      # so the --onto range stays exactly the fork's own commits either way. A
+      # marker left behind is not — the next range would replay upstream's
+      # commits as if they were ours.
+      - name: Update the upstream-base marker
+        env:
+          UPSTREAM_TAG: ${{ needs.check-upstream.outputs.upstream_tag }}
+        run: |
+          # ^{commit} dereferences the annotated release tag, so the marker
+          # names the commit rather than the tag object.
+          git tag -f upstream-base "$UPSTREAM_TAG^{commit}"
+          git push origin upstream-base --force
+
+      # Force-push is required because rebase rewrites commit SHAs.
+      # This push (via SYNC_TOKEN) triggers fork-release.yml.
+      - name: Push rebased time-tracking
+        run: git push origin time-tracking --force-with-lease
+
+      - name: Summary
+        env:
+          UPSTREAM_TAG: ${{ needs.check-upstream.outputs.upstream_tag }}
+        run: |
+          HEAD_SHA=$(git rev-parse --short HEAD)
+          VERSION=$(git describe --tags --always)
+          {
+            echo "### Sync complete"
+            echo "- Upstream release: \`$UPSTREAM_TAG\`"
+            echo "- time-tracking HEAD: \`$HEAD_SHA\`"
+            echo "- Version string: \`$VERSION\`"
+            echo "- Release will be cut by fork-release.yml (triggered by the push above)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  record:
+    name: Record synced version
+    needs: [check-upstream, sync-fork]
+    if: needs.check-upstream.outputs.should_sync == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Save synced release to cache
+        env:
+          UPSTREAM_TAG: ${{ needs.check-upstream.outputs.upstream_tag }}
+        run: |
+          mkdir -p .last-synced-sha
+          echo "$UPSTREAM_TAG" > .last-synced-sha/sha
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        continue-on-error: true
+        with:
+          path: .last-synced-sha
+          key: last-synced-sha-${{ needs.check-upstream.outputs.upstream_tag }}
