@@ -1,0 +1,199 @@
+name: Fork sync
+
+# Rebases time-tracking onto upstream master. The sync job's force-push to
+# time-tracking — when authored with SYNC_TOKEN (a PAT) rather than the
+# default GITHUB_TOKEN — triggers fork-release.yml, which does the actual
+# tagging and goreleaser run.
+#
+# Tracking policy: follows upstream master until upstream cuts a stable release.
+# v3.0.3 is the last stable upstream release (2026-03-02). v4.0.0-rc.1 exists
+# but is a release candidate, not stable. Until a stable v4.0.0 (or later) is
+# published at https://github.com/basecamp/fizzy-cli/releases, following master
+# is correct and fork releases will carry rc-based version strings (e.g.
+# 4.0.0-rc.1-tt.N.gSHA). When a stable release appears, switch this workflow
+# to rebase onto that release tag instead of upstream/master.
+
+on:
+  schedule:
+    - cron: "20 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force sync even if already synced against this upstream SHA"
+        type: boolean
+        default: false
+
+concurrency:
+  group: fork-sync
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  check-upstream:
+    name: Check for upstream changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should_sync: ${{ steps.decide.outputs.should_sync }}
+      upstream_sha: ${{ steps.resolve.outputs.upstream_sha }}
+    steps:
+      - name: Resolve upstream master HEAD
+        id: resolve
+        run: |
+          SHA=$(git ls-remote https://github.com/basecamp/fizzy-cli.git refs/heads/master | cut -f1)
+
+          if [ -z "$SHA" ]; then
+            echo "::warning::Could not resolve upstream master HEAD"
+            echo "upstream_sha=" >> "$GITHUB_OUTPUT"
+          else
+            SHORT_SHA="${SHA:0:12}"
+            echo "upstream_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check cache for previous sync
+        if: steps.resolve.outputs.upstream_sha != '' && inputs.force != true
+        id: cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .last-synced-sha
+          key: last-synced-sha-${{ steps.resolve.outputs.upstream_sha }}
+
+      - name: Decide whether to sync
+        id: decide
+        env:
+          UPSTREAM_SHA: ${{ steps.resolve.outputs.upstream_sha }}
+          CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          if [ -z "$UPSTREAM_SHA" ]; then
+            echo "should_sync=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: could not resolve upstream SHA"
+          elif [ "$FORCE" = "true" ]; then
+            echo "should_sync=true" >> "$GITHUB_OUTPUT"
+            echo "Syncing: force=true"
+          elif [ "$CACHE_HIT" = "true" ]; then
+            echo "should_sync=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: already synced against $UPSTREAM_SHA"
+          else
+            echo "should_sync=true" >> "$GITHUB_OUTPUT"
+            echo "Syncing: new upstream master $UPSTREAM_SHA"
+          fi
+
+          {
+            echo "### Fork sync check"
+            echo "- Upstream master: \`$UPSTREAM_SHA\`"
+            echo "- Should sync: \`$(grep should_sync "$GITHUB_OUTPUT" | cut -d= -f2)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  sync-fork:
+    name: Sync fork and rebase
+    needs: check-upstream
+    if: needs.check-upstream.outputs.should_sync == 'true'
+    runs-on: ubuntu-latest
+    environment: Sync
+    permissions:
+      contents: write
+    steps:
+      # Server-side sync avoids needing to push workflow file changes
+      # (which requires a PAT — GITHUB_TOKEN cannot push .github/workflows/)
+      - name: Sync fork master from upstream
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: gh repo sync ${{ github.repository }} --branch master
+
+      # Use SYNC_TOKEN (PAT) as the checkout's git credential so the later
+      # force-push to time-tracking is attributed to the PAT's user —
+      # pushes authored by GITHUB_TOKEN do not trigger downstream workflows
+      # (GitHub prevents workflow cascade loops).
+      - name: Checkout fork
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked] -- credentials needed for git push
+        with:
+          ref: time-tracking
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream with tags
+        run: |
+          git remote add upstream https://github.com/basecamp/fizzy-cli.git
+          git fetch upstream --tags
+          git fetch upstream master
+
+      # Tag upstream/master so git describe counts only our commits.
+      # Temporary hack until upstream releases post-v3.0.3, at which
+      # point we switch to tracking release tags directly.
+      - name: Tag upstream master
+        run: |
+          git tag -f upstream-master upstream/master
+          git push origin upstream-master --force
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+
+      - name: Rebase time-tracking onto upstream master
+        run: |
+          git checkout time-tracking
+          # -X ours takes upstream's SURFACE.txt on any conflict; we regenerate below.
+          git rebase -X ours upstream/master
+          # Regenerate to restore fork-specific commands (fizzy time, self-update).
+          GENERATE_SURFACE=1 go test ./internal/commands/ -run TestGenerateSurfaceSnapshot -v
+          if ! git diff --quiet SURFACE.txt; then
+            git add SURFACE.txt
+            git commit --amend --no-edit
+          fi
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.10
+          args: --help
+
+      - name: Verify rebased branch compiles and passes tests
+        run: make check
+
+      # Force-push is required because rebase rewrites commit SHAs.
+      # This push (via SYNC_TOKEN) triggers fork-release.yml.
+      - name: Push rebased time-tracking
+        run: git push origin time-tracking --force-with-lease
+
+      - name: Summary
+        env:
+          UPSTREAM_SHA: ${{ needs.check-upstream.outputs.upstream_sha }}
+        run: |
+          HEAD_SHA=$(git rev-parse --short HEAD)
+          VERSION=$(git describe --tags --always)
+          {
+            echo "### Sync complete"
+            echo "- Upstream master: \`$UPSTREAM_SHA\`"
+            echo "- time-tracking HEAD: \`$HEAD_SHA\`"
+            echo "- Version string: \`$VERSION\`"
+            echo "- Release will be cut by fork-release.yml (triggered by the push above)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  record:
+    name: Record synced version
+    needs: [check-upstream, sync-fork]
+    if: needs.check-upstream.outputs.should_sync == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Save upstream SHA to cache
+        env:
+          UPSTREAM_SHA: ${{ needs.check-upstream.outputs.upstream_sha }}
+        run: |
+          mkdir -p .last-synced-sha
+          echo "$UPSTREAM_SHA" > .last-synced-sha/sha
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        continue-on-error: true
+        with:
+          path: .last-synced-sha
+          key: last-synced-sha-${{ needs.check-upstream.outputs.upstream_sha }}
