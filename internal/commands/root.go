@@ -69,6 +69,13 @@ var (
 
 var cliVersion = "dev"
 
+// pendingExitCode lets a command signal a specific process exit code without
+// going through the error-printing path (used for non-error status codes
+// like `self-update --check` returning 100 when already up-to-date).
+// Zero means "use the default" — 0 on success, derived from *output.Error
+// on error.
+var pendingExitCode int
+
 // rootCmd represents the base command.
 var rootCmd = &cobra.Command{
 	Use:     "fizzy",
@@ -240,6 +247,9 @@ func Execute() {
 			_ = out.Err(e)
 		}
 		os.Exit(e.ExitCode())
+	}
+	if pendingExitCode != 0 {
+		os.Exit(pendingExitCode)
 	}
 }
 
